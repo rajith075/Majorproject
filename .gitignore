@@ -29,3 +29,12 @@ frontend/out/
 # =========================
 .DS_Store
 Thumbs.db
+# ML Generated Data
+backend/ml/data/generated/
+backend/ml/data/processed/
+
+# Trained Models
+backend/ml/models/
+
+# Jupyter
+backend/ml/notebooks/.ipynb_checkpoints/
