@@ -34,7 +34,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth_router)
 app.include_router(patient_router)
 app.include_router(condition_router)
-app.include_router(vital_log.router)
+
 
 
 @app.get("/")
