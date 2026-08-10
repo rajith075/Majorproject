@@ -4,10 +4,13 @@ from sqlalchemy import (
     Integer,
 )
 
+from sqlalchemy.orm import relationship
+
 from app.db.database import Base
 
 
 class PatientCondition(Base):
+
     __tablename__ = "patient_conditions"
 
     id = Column(
@@ -23,4 +26,9 @@ class PatientCondition(Base):
     condition_id = Column(
         Integer,
         ForeignKey("conditions.id"),
+    )
+
+    condition = relationship(
+        "Condition",
+        lazy="joined",
     )

@@ -11,7 +11,10 @@ from app.schemas.patient import (
     PatientResponse,
 )
 
-from app.services.patient_service import PatientService
+# IMPORTANT:
+# PatientService is inside app/services/patient.py
+from app.services.patient import PatientService
+
 
 router = APIRouter(
     prefix="/patient",
@@ -42,7 +45,7 @@ def create_patient(
     if patient is None:
         raise HTTPException(
             status_code=400,
-            detail="Patient profile already exists."
+            detail="Patient profile already exists.",
         )
 
     return patient
@@ -90,7 +93,7 @@ def update_patient(
     if patient is None:
         raise HTTPException(
             status_code=404,
-            detail="Patient not found."
+            detail="Patient not found.",
         )
 
     return patient

@@ -1,16 +1,8 @@
 from datetime import datetime
-from typing import Optional
-
 from pydantic import BaseModel
 
 
-# ==========================================================
-# Create Vital Log
-# ==========================================================
-
 class VitalLogCreate(BaseModel):
-
-    patient_id: int
 
     heart_rate: float
 
@@ -24,20 +16,19 @@ class VitalLogCreate(BaseModel):
 
     respiratory_rate: float
 
-    sleep_hours: Optional[float] = None
+    sleep_hours: float
 
-    activity_steps: Optional[int] = None
+    activity_steps: int
 
-
-# ==========================================================
-# Response
-# ==========================================================
 
 class VitalLogResponse(VitalLogCreate):
 
     id: int
 
+    patient_id: int
+
     created_at: datetime
 
     class Config:
+
         from_attributes = True
