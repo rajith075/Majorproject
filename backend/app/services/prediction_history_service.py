@@ -1,10 +1,10 @@
-"""
-==========================================================
-Prediction History Service
-
-Handles storing and retrieving AI prediction history.
-==========================================================
-"""
+# ==========================================================
+# Prediction History Service
+# ==========================================================
+#
+# Handles storing and retrieving AI prediction history.
+#
+# ==========================================================
 
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,10 @@ from app.models.prediction_history import PredictionHistory
 
 
 class PredictionHistoryService:
+
+    # ======================================================
+    # Save Prediction
+    # ======================================================
 
     def save_prediction(
         self,
@@ -24,25 +28,41 @@ class PredictionHistoryService:
 
             patient_id=patient_id,
 
-            # ==========================================
+            # ==============================================
             # Health Prediction
-            # ==========================================
+            # ==============================================
 
-            health_risk=prediction["health_prediction"]["level"],
+            health_risk=(
+                prediction[
+                    "health_prediction"
+                ]["level"]
+            ),
 
-            health_confidence=prediction["health_prediction"]["confidence"],
+            health_confidence=(
+                prediction[
+                    "health_prediction"
+                ]["confidence"]
+            ),
 
-            # ==========================================
+            # ==============================================
             # Clinical Prediction
-            # ==========================================
+            # ==============================================
 
-            clinical_event=prediction["clinical_prediction"]["event"],
+            clinical_event=(
+                prediction[
+                    "clinical_prediction"
+                ]["event"]
+            ),
 
-            clinical_confidence=prediction["clinical_prediction"]["confidence"],
+            clinical_confidence=(
+                prediction[
+                    "clinical_prediction"
+                ]["confidence"]
+            ),
 
-            # ==========================================
+            # ==============================================
             # Alert
-            # ==========================================
+            # ==============================================
 
             alert_level=(
                 prediction["alerts"][0]["severity"]
@@ -56,23 +76,43 @@ class PredictionHistoryService:
                 else "No active alerts"
             ),
 
-            # ==========================================
+            # ==============================================
             # AI Output
-            # ==========================================
+            # ==============================================
 
-            recommendations=prediction["recommendations"],
+            recommendations=(
+                prediction["recommendations"]
+            ),
 
-            engineered_features=prediction["engineered_features"],
+            engineered_features=(
+                prediction["engineered_features"]
+            ),
 
-            # ==========================================
-            # Future Features
-            # ==========================================
+            # ==============================================
+            # Overall Health Score
+            # ==============================================
 
-            overall_health_score=None,
+            overall_health_score=(
+                prediction.get(
+                    "overall_health_score"
+                )
+            ),
 
-            ai_summary=None,
+            # ==============================================
+            # AI Summary
+            # ==============================================
+
+            ai_summary=(
+                prediction.get(
+                    "ai_summary"
+                )
+            ),
 
         )
+
+        # ==================================================
+        # Save
+        # ==================================================
 
         db.add(history)
 
@@ -97,7 +137,8 @@ class PredictionHistoryService:
             db.query(PredictionHistory)
 
             .filter(
-                PredictionHistory.patient_id == patient_id
+                PredictionHistory.patient_id
+                == patient_id
             )
 
             .order_by(
@@ -123,7 +164,8 @@ class PredictionHistoryService:
             db.query(PredictionHistory)
 
             .filter(
-                PredictionHistory.patient_id == patient_id
+                PredictionHistory.patient_id
+                == patient_id
             )
 
             .order_by(
@@ -134,5 +176,9 @@ class PredictionHistoryService:
 
         )
 
+
+# ==========================================================
+# Singleton
+# ==========================================================
 
 prediction_history_service = PredictionHistoryService()
