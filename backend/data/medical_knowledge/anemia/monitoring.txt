@@ -1,0 +1,9 @@
+Anemia Monitoring
+
+Monitoring may include available blood measurements, fatigue-related observations, activity tolerance, symptoms, nutrition, and changes from the patient's usual baseline.
+
+Persistent or concerning changes should be evaluated by an appropriate healthcare professional.
+
+AI-generated observations should not determine treatment or medication changes.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

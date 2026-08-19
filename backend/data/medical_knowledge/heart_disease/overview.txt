@@ -1,0 +1,7 @@
+Heart Disease in Older Adults
+
+Heart disease refers to conditions affecting the heart and cardiovascular system. In older adults, cardiovascular health may be influenced by age, existing medical conditions, blood pressure, activity level, medications, and lifestyle factors.
+
+An AI monitoring system can help identify changes in available health information and patterns that may require attention, but it should not be used to diagnose heart disease.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

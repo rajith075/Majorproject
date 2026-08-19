@@ -1,0 +1,9 @@
+Asthma Monitoring
+
+Monitoring may include changes in breathing, activity tolerance, symptoms, oxygen observations when available, and differences from the patient's usual respiratory baseline.
+
+Repeated or concerning changes should be communicated to an appropriate healthcare professional.
+
+An AI monitoring system may identify patterns but should not determine medication or treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

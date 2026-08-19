@@ -1,0 +1,9 @@
+
+
+Hypertension refers to persistently elevated blood pressure. It is an important cardiovascular risk factor and may increase the risk of complications involving the heart, brain, kidneys, and blood vessels.
+
+Blood pressure assessment should consider repeated measurements rather than relying on a single reading. Interpretation should also consider the individual's usual baseline, overall health, existing conditions, medications, and other relevant risk factors.
+
+For an elderly-care monitoring system, an elevated reading should be interpreted together with the patient's history and other observations rather than treated as a diagnosis by the AI system.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

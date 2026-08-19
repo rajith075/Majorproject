@@ -1,0 +1,9 @@
+Parkinson's Disease in Elderly Patients
+
+Older adults with Parkinson's disease may experience changes in mobility, balance, daily activities, and sleep that should be considered together with their usual baseline.
+
+Caregiver monitoring should consider mobility, fall risk observations, activity, medication adherence, sleep, and changes in daily functioning.
+
+An AI system can assist with monitoring but should not replace professional assessment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

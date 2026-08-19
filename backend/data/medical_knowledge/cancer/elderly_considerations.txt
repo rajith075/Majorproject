@@ -1,0 +1,9 @@
+Cancer in Elderly Patients
+
+Older adults with cancer may have additional health conditions, medications, and functional considerations that provide important context.
+
+Caregiver monitoring should consider nutrition, hydration, mobility, activity, sleep, symptoms, medication adherence, and changes from the patient's baseline.
+
+An AI monitoring system can assist with organizing observations but should not replace professional clinical decisions.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

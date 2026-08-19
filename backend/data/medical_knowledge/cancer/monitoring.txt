@@ -1,0 +1,9 @@
+Cancer Monitoring
+
+Monitoring may include changes in symptoms, activity, nutrition, hydration, weight, medication adherence, and other available patient observations.
+
+Persistent or concerning changes should be communicated to the patient's healthcare team.
+
+AI-generated observations should not be used to determine cancer diagnosis or treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

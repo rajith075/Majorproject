@@ -1,0 +1,9 @@
+Liver Disease Monitoring
+
+Monitoring may include available laboratory results, medication adherence, nutrition, hydration, symptoms, and changes from the patient's usual baseline.
+
+Persistent or concerning changes should be discussed with an appropriate healthcare professional.
+
+An AI monitoring system can help identify patterns but should not determine treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

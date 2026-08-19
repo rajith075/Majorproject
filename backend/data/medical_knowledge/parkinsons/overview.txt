@@ -1,0 +1,7 @@
+Parkinson's Disease in Older Adults
+
+Parkinson's disease is a neurological condition that can affect movement and other functions. Symptoms and functional changes can vary between individuals.
+
+An AI monitoring system may help identify patterns in mobility and other available observations but should not diagnose Parkinson's disease.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

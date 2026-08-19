@@ -1,0 +1,7 @@
+Alzheimer's Disease in Older Adults
+
+Alzheimer's disease is a progressive neurological condition associated with changes in memory and cognitive functioning.
+
+An AI monitoring system may help identify changes in available observations but cannot diagnose Alzheimer's disease.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

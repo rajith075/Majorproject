@@ -1,0 +1,9 @@
+Parkinson's Disease Monitoring
+
+Monitoring may include changes in mobility, balance, activity, tremor-related observations, daily functioning, sleep, and other available patient information.
+
+Meaningful changes from the patient's established baseline should be communicated to an appropriate healthcare professional.
+
+AI-generated observations should not determine medication or treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

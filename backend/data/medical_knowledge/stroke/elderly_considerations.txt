@@ -1,0 +1,9 @@
+Stroke in Elderly Patients
+
+Older adults may have changes in mobility, memory, balance, communication, or other functions that require comparison with their established baseline.
+
+Caregiver monitoring should focus on meaningful changes from the patient's usual condition and should consider existing medical conditions, medications, mobility, and overall health.
+
+An AI monitoring system can help identify patterns but should not replace professional clinical assessment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

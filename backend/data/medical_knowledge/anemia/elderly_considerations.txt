@@ -1,0 +1,9 @@
+Anemia in Elderly Patients
+
+Older adults may have multiple health conditions and nutritional or medication factors that provide important context when reviewing observations related to anemia.
+
+Caregiver monitoring should consider energy, activity, nutrition, hydration, symptoms, and changes from the patient's established baseline.
+
+An AI monitoring system can support observation and explanation but should not replace professional diagnosis or clinical decision-making.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

@@ -1,0 +1,12 @@
+Hypertension in Older Adults
+
+Blood pressure monitoring is particularly relevant in older adults because cardiovascular risk can be influenced by age, existing medical conditions, medications, lifestyle factors, and changes from the individual's usual baseline.
+
+Caregiver monitoring should focus on trends rather than isolated readings. Repeated elevated blood pressure measurements, significant changes from baseline, or new symptoms should be communicated to an appropriate healthcare professional.
+
+The patient's overall health, mobility, medication adherence, hydration, activity, sleep, and other relevant factors may provide additional context when reviewing blood pressure observations.
+
+An AI monitoring system can help identify patterns and provide explanations, but it should not be used as a substitute for professional diagnosis or clinical decision-making.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.
+

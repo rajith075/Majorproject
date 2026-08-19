@@ -1,0 +1,9 @@
+Kidney Disease Monitoring
+
+Monitoring may consider available laboratory measurements, hydration information, blood pressure, medication adherence, symptoms, and changes from the patient's usual baseline.
+
+Persistent or concerning changes should be reviewed by an appropriate healthcare professional.
+
+An AI system can help organize and identify patterns but should not determine clinical treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

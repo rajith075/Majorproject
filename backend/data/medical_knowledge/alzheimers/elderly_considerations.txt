@@ -1,0 +1,9 @@
+Alzheimer's Disease in Elderly Patients
+
+Older adults with cognitive impairment may require monitoring of changes in memory, behavior, daily activities, mobility, sleep, hydration, and overall functioning.
+
+Caregiver observations should focus on changes from the patient's established baseline rather than isolated observations.
+
+An AI system may support pattern recognition but should not replace professional diagnosis or care decisions.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

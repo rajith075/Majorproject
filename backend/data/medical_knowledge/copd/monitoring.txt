@@ -1,0 +1,9 @@
+COPD Monitoring
+
+Respiratory monitoring may consider breathing patterns, oxygen saturation when available, activity tolerance, symptoms, and changes from the patient's usual baseline.
+
+Persistent or concerning respiratory changes should be communicated to an appropriate healthcare professional.
+
+An AI monitoring system can assist with identifying patterns but should not determine treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

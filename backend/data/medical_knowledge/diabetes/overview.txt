@@ -1,0 +1,11 @@
+Diabetes in Older Adults
+
+Diabetes is a chronic condition in which blood glucose levels remain higher than the normal range because the body does not produce enough insulin, does not use insulin effectively, or both.
+
+In older adults, diabetes management should consider overall health, existing medical conditions, medications, nutrition, physical activity, and the individual's usual health status.
+
+Blood glucose observations should be interpreted together with other available patient information rather than treated as a diagnosis by an AI monitoring system.
+
+An AI monitoring system can help identify patterns and changes in available health data, but it should not replace professional diagnosis or clinical decision-making.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

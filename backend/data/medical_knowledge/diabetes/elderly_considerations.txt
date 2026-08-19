@@ -1,0 +1,11 @@
+Diabetes in Elderly Patients
+
+Diabetes monitoring can require additional attention in older adults because age, existing medical conditions, medications, nutrition, physical activity, hydration, sleep, and changes from the individual's usual baseline may influence overall health.
+
+Caregiver monitoring should focus on trends rather than isolated measurements. Repeated abnormal blood glucose readings, significant changes from baseline, or new symptoms should be communicated to an appropriate healthcare professional.
+
+The patient's medication adherence, eating patterns, hydration, activity level, sleep, mobility, and overall health may provide useful context when reviewing blood glucose observations.
+
+An AI monitoring system can help identify patterns and provide explanations based on available data, but it should not be used as a substitute for professional diagnosis or clinical decision-making.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

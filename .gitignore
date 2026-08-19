@@ -1,40 +1,89 @@
-# =========================
-# Python
-# =========================
+# =========================================================
+# PYTHON
+# =========================================================
+
 backend/venv/
 backend/__pycache__/
+backend/**/__pycache__/
 backend/**/*.pyc
+backend/**/*.pyo
 backend/.env
 
-# =========================
-# ML
-# =========================
+
+# =========================================================
+# MACHINE LEARNING - GENERATED DATA
+# =========================================================
+
+# Generated datasets
+backend/ml/data/generated/
+
+# Processed datasets
+backend/ml/data/processed/
+
+# Trained ML models
 backend/ml/models/
+
+# CatBoost training artifacts
+backend/ml/notebooks/catboost_info/
+
+# Jupyter temporary files
 backend/ml/notebooks/.ipynb_checkpoints/
 
-# =========================
-# Next.js
-# =========================
+
+# =========================================================
+# NEXT.JS
+# =========================================================
+
 frontend/node_modules/
 frontend/.next/
 frontend/out/
 
-# =========================
-# VS Code
-# =========================
+
+# =========================================================
+# BUILD / CACHE
+# =========================================================
+
+**/.cache/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+
+# =========================================================
+# TEST / COVERAGE
+# =========================================================
+
+.coverage
+htmlcov/
+.pytest_cache/
+
+
+# =========================================================
+# VS CODE
+# =========================================================
+
 .vscode/
 
-# =========================
+
+# =========================================================
 # OS
-# =========================
+# =========================================================
+
 .DS_Store
 Thumbs.db
-# ML Generated Data
-backend/ml/data/generated/
-backend/ml/data/processed/
 
-# Trained Models
-backend/ml/models/
 
-# Jupyter
-backend/ml/notebooks/.ipynb_checkpoints/
+# =========================================================
+# LOGS
+# =========================================================
+
+*.log
+
+
+# =========================================================
+# TEMPORARY / GENERATED ARCHIVES
+# =========================================================
+
+*.zip
+*.tar
+*.tar.gz

@@ -79,6 +79,10 @@ class ClinicalPredictor:
         # Convert string
         value = str(value).strip().lower()
 
+        # ------------------------------------------------
+        # Positive / Yes
+        # ------------------------------------------------
+
         if value in {
             "yes",
             "true",
@@ -92,12 +96,21 @@ class ClinicalPredictor:
 
             return 1
 
+        # ------------------------------------------------
+        # Negative / No
+        # ------------------------------------------------
+
         if value in {
             "no",
             "false",
             "0",
             "non-smoker",
             "nonsmoker",
+            "never",
+            "never smoked",
+            "never smokes",
+            "never drinks",
+            "never drank",
             "none",
             "no alcohol",
             "non-drinker",

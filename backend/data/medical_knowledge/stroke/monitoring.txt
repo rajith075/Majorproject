@@ -1,0 +1,7 @@
+Stroke Monitoring
+
+Monitoring may include observing changes in the patient's usual neurological status, mobility, speech, memory, behavior, and other available health information.
+
+Sudden or concerning changes should be communicated to an appropriate healthcare professional promptly. AI-generated observations should not be treated as a clinical diagnosis.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

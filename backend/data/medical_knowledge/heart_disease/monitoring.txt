@@ -1,0 +1,9 @@
+Heart Disease Monitoring
+
+Monitoring should consider available cardiovascular observations together with the patient's usual baseline, activity, symptoms, medication adherence, and overall health status.
+
+Caregivers should pay attention to persistent or meaningful changes in available health measurements or patient condition and communicate concerning changes to an appropriate healthcare professional.
+
+An AI monitoring system may help identify patterns but should not determine clinical treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

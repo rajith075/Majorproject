@@ -108,6 +108,28 @@ class PredictionHistoryService:
                 )
             ),
 
+            # ==============================================
+            # RAG Explanation
+            # ==============================================
+            #
+            # Stores the complete grounded RAG response:
+            #
+            # {
+            #   "status": "...",
+            #   "summary": "...",
+            #   "key_factors": [...],
+            #   "caregiver_guidance": [...],
+            #   "disclaimer": "...",
+            #   "sources": [...]
+            # }
+            #
+            # ==============================================
+
+            rag_explanation=(
+                prediction.get(
+                    "rag_explanation"
+                )
+            ),
         )
 
         # ==================================================

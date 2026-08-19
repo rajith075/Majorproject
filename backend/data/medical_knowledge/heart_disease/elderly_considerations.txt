@@ -1,0 +1,9 @@
+Heart Disease in Elderly Patients
+
+Older adults may have multiple health conditions and medications that provide important context when reviewing cardiovascular observations.
+
+Caregiver monitoring should consider trends rather than isolated observations and should take into account mobility, activity, sleep, hydration, medication adherence, and changes from the patient's usual baseline.
+
+An AI system can assist with monitoring and explanation but should not replace professional diagnosis or clinical decision-making.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

@@ -67,12 +67,25 @@ class PredictionHistory(Base):
     engineered_features = Column(JSON)
 
     # ======================================================
-    # NEW (Future Dashboard & RAG)
+    # Overall Health Score
     # ======================================================
 
     overall_health_score = Column(Float)
 
+    # ======================================================
+    # AI Summary
+    # ======================================================
+
     ai_summary = Column(String(500))
+
+    # ======================================================
+    # RAG Explanation
+    #
+    # Stores the grounded medical explanation generated
+    # using retrieved medical knowledge + patient context.
+    # ======================================================
+
+    rag_explanation = Column(JSON)
 
     # ======================================================
     # Timestamp

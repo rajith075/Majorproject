@@ -11,14 +11,20 @@ import EmergencyContactStep from "./EmergencyContactStep";
 import CareTeamStep from "./CareTeamStep";
 import LifestyleStep from "./LifestyleStep";
 import ReviewStep from "./ReviewStep";
+
 import { toast } from "sonner";
 import LoadingOverlay from "@/components/ui/LoadingOverlay";
 import SuccessDialog from "@/components/ui/SuccessDialog";
 
 import { createPatient } from "@/services/api/patient";
+import { usePatientStore } from "@/store/patient-store";
 
 export default function PatientWizard() {
   const router = useRouter();
+
+  const setPatient = usePatientStore(
+    (state) => state.setPatient
+  );
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -35,8 +41,8 @@ export default function PatientWizard() {
 
     // Medical
     medical_conditions: [] as string[],
-allergies: [] as string[],
-medications: [] as string[],
+    allergies: [] as string[],
+    medications: [] as string[],
 
     // Emergency
     emergency_contact_name: "",
@@ -66,45 +72,52 @@ medications: [] as string[],
   };
 
   const handleSubmit = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    await createPatient({
-      ...patientData,
-      medical_conditions: patientData.medical_conditions.join(", "),
-      allergies: patientData.allergies.join(", "),
-      medications: patientData.medications.join(", "),
-    });
+      const patient = await createPatient({
+        ...patientData,
+        medical_conditions:
+          patientData.medical_conditions.join(", "),
+        allergies:
+          patientData.allergies.join(", "),
+        medications:
+          patientData.medications.join(", "),
+      });
 
-    setLoading(false);
+      // Store newly created patient in Zustand
+      setPatient(patient);
 
-    setSuccess(true);
+      setLoading(false);
+      setSuccess(true);
 
-    toast.success("Patient Registered Successfully!", {
-      description:
-        "Welcome to Elderly Care AI. Redirecting to your dashboard...",
-    });
+      toast.success("Patient Registered Successfully!", {
+        description:
+          "Welcome to Elderly Care AI. Redirecting to your dashboard...",
+      });
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, 2000)
+      );
 
-    router.replace("/dashboard");
-  } catch (error: any) {
-    console.error(error);
+      router.replace("/dashboard");
+    } catch (error: any) {
+      console.error(error);
 
-    setLoading(false);
+      setLoading(false);
 
-    toast.error(
-      error?.response?.data?.detail ??
-        "Unable to create patient profile."
-    );
-  }
-};
+      toast.error(
+        error?.response?.data?.detail ??
+          "Unable to create patient profile."
+      );
+    }
+  };
 
   return (
     <div className="mx-auto max-w-6xl">
       <LoadingOverlay open={loading} />
 
-<SuccessDialog open={success} />
+      <SuccessDialog open={success} />
 
       <StepIndicator
         currentStep={step}
@@ -114,7 +127,6 @@ medications: [] as string[],
       <div className="mt-10 rounded-[32px] border border-violet-100 bg-white/80 p-10 shadow-xl backdrop-blur-xl">
 
         {/* STEP 1 */}
-
         {step === 1 && (
           <BasicInfoStep
             data={patientData}
@@ -124,7 +136,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 2 */}
-
         {step === 2 && (
           <MedicalInfoStep
             data={patientData}
@@ -135,7 +146,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 3 */}
-
         {step === 3 && (
           <MedicationStep
             data={patientData}
@@ -146,7 +156,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 4 */}
-
         {step === 4 && (
           <EmergencyContactStep
             data={patientData}
@@ -157,7 +166,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 5 */}
-
         {step === 5 && (
           <CareTeamStep
             data={patientData}
@@ -168,7 +176,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 6 */}
-
         {step === 6 && (
           <LifestyleStep
             data={patientData}
@@ -179,7 +186,6 @@ medications: [] as string[],
         )}
 
         {/* STEP 7 */}
-
         {step === 7 && (
           <ReviewStep
             data={patientData}
@@ -189,7 +195,6 @@ medications: [] as string[],
         )}
 
       </div>
-
     </div>
   );
 }

@@ -1,0 +1,7 @@
+Stroke in Older Adults
+
+A stroke is a medical condition involving interruption of blood flow to part of the brain or bleeding in the brain. Older adults may have multiple factors that influence stroke risk, including cardiovascular conditions and other existing health conditions.
+
+An AI monitoring system may identify patterns in available patient data but cannot diagnose a stroke.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

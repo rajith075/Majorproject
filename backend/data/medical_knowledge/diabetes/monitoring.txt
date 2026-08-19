@@ -1,0 +1,13 @@
+Diabetes Monitoring
+
+Regular monitoring of blood glucose can help identify changes from a patient's usual readings and support ongoing health observation.
+
+Caregivers should record available blood glucose measurements consistently and pay attention to repeated abnormal readings or meaningful changes from the patient's established baseline.
+
+Blood glucose observations should be considered together with other available information, including symptoms, medication adherence, food intake, physical activity, hydration, sleep, and overall health status.
+
+Persistent or concerning changes in blood glucose should be communicated to an appropriate healthcare professional for clinical assessment.
+
+An AI monitoring system may help identify patterns in health data, but it should not be used to diagnose diabetes or determine treatment.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

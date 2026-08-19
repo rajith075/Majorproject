@@ -1,0 +1,7 @@
+Kidney Disease in Older Adults
+
+Kidney disease involves reduced or altered kidney function and may be associated with other health conditions. In older adults, overall health, medications, hydration, blood pressure, and existing conditions may provide important context.
+
+An AI monitoring system can identify patterns in available information but should not diagnose kidney disease.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.

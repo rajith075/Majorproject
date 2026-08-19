@@ -6,10 +6,11 @@
 #
 # 1. Receiving patient / AI context
 # 2. Retrieving relevant medical knowledge
-# 3. Building a grounded medical prompt
-# 4. Sending the prompt to Gemini
-# 5. Returning structured RAG explanation
-# 6. Returning the retrieved knowledge sources
+# 3. Filtering knowledge by medical category
+# 4. Building a grounded medical prompt
+# 5. Sending the prompt to Gemini
+# 6. Returning structured RAG explanation
+# 7. Returning retrieved knowledge sources
 #
 # ==========================================================
 
@@ -27,9 +28,7 @@ class RAGGenerator:
 
         self.retriever = retriever
 
-        self.gemini_service = (
-            gemini_service
-        )
+        self.gemini_service = gemini_service
 
     # ======================================================
     # Generate Medical Explanation
@@ -40,7 +39,20 @@ class RAGGenerator:
         query,
         patient_context,
         top_k=3,
+        category=None,
     ):
+
+        # ==================================================
+        # Normalize Category
+        # ==================================================
+
+        if category:
+
+            category = (
+                str(category)
+                .strip()
+                .lower()
+            )
 
         # ==================================================
         # Retrieve Medical Knowledge
@@ -50,6 +62,7 @@ class RAGGenerator:
             self.retriever.retrieve(
                 query=query,
                 top_k=top_k,
+                category=category,
             )
         )
 
@@ -61,9 +74,13 @@ class RAGGenerator:
 
             return {
 
+                "status":
+                    "insufficient_knowledge",
+
                 "summary": (
-                    "No relevant medical knowledge "
-                    "was found for this prediction."
+                    "No sufficiently relevant "
+                    "medical knowledge was found "
+                    "for this prediction."
                 ),
 
                 "key_factors": [],
@@ -71,9 +88,11 @@ class RAGGenerator:
                 "caregiver_guidance": [],
 
                 "disclaimer": (
-                    "This explanation is provided for "
-                    "health monitoring and educational "
-                    "purposes only and does not replace "
+                    "This explanation is provided "
+                    "for health monitoring and "
+                    "educational purposes only. "
+                    "It does not constitute a "
+                    "medical diagnosis or replace "
                     "professional medical advice."
                 ),
 
@@ -95,6 +114,23 @@ class RAGGenerator:
         )
 
         # ==================================================
+        # Build Source Context
+        # ==================================================
+
+        source_context = "\n".join(
+
+            (
+                f"- Category: {document['category']}\n"
+                f"  Source: {document['source']}\n"
+                f"  Chunk: {document['chunk_id']}"
+            )
+
+            for document
+            in retrieved_documents
+
+        )
+
+        # ==================================================
         # Build Grounded Prompt
         # ==================================================
 
@@ -102,28 +138,34 @@ class RAGGenerator:
 You are an AI medical explanation assistant
 for an elderly-care monitoring system.
 
-Your job is to explain an existing AI prediction
-using the patient's information and the retrieved
+Your job is to explain an EXISTING AI prediction
+using the patient's information and retrieved
 medical knowledge.
 
-IMPORTANT RULES:
+IMPORTANT SAFETY RULES:
 
 - Do not diagnose the patient.
 - Do not invent medical facts.
 - Do not change or contradict the AI prediction.
-- Use the retrieved medical knowledge as the
-  grounding source for the explanation.
-- Only make claims supported by the patient context
-  or retrieved medical knowledge.
-- Clearly distinguish an AI prediction from medical
+- Use ONLY the patient context and retrieved
+  medical knowledge as grounding.
+- Do not make claims unsupported by the supplied
+  information.
+- Clearly distinguish AI prediction from medical
   diagnosis or medical advice.
 - Keep the explanation understandable for caregivers
   and family members.
-- Do not recommend changing, starting, or stopping
+- Do not recommend starting, stopping, or changing
   medication.
 - Do not provide emergency treatment instructions.
 - If the retrieved knowledge is insufficient,
-  explicitly say so.
+  explicitly state that.
+- Focus on monitoring and communication with a
+  healthcare professional when appropriate.
+
+RAG MEDICAL CATEGORY:
+
+{category if category else "Not specified"}
 
 PATIENT / AI CONTEXT:
 
@@ -133,10 +175,14 @@ RETRIEVED MEDICAL KNOWLEDGE:
 
 {medical_context}
 
+RETRIEVED SOURCES:
+
+{source_context}
+
 TASK:
 
 Explain the AI prediction using the patient context
-and retrieved medical knowledge.
+and the retrieved medical knowledge.
 
 The explanation must contain:
 
@@ -146,6 +192,12 @@ The explanation must contain:
    to those factors.
 4. What the caregiver should pay attention to.
 5. A short safety disclaimer.
+
+IMPORTANT:
+
+The retrieved medical knowledge is the grounding
+source. Do not introduce unrelated medical
+conditions or unsupported medical claims.
 
 Return ONLY valid JSON in exactly this structure:
 
@@ -184,17 +236,21 @@ Return ONLY valid JSON in exactly this structure:
         ):
 
             response = {
-                "summary": str(response),
+
+                "summary":
+                    str(response),
 
                 "key_factors": [],
 
                 "caregiver_guidance": [],
 
                 "disclaimer": (
-                    "This explanation is provided "
-                    "for health monitoring and "
-                    "educational purposes only."
+                    "This explanation is "
+                    "provided for health "
+                    "monitoring and educational "
+                    "purposes only."
                 ),
+
             }
 
         # ==================================================
@@ -257,6 +313,9 @@ Return ONLY valid JSON in exactly this structure:
         # ==================================================
 
         return {
+
+            "status":
+                "grounded",
 
             "summary":
                 summary,

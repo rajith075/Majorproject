@@ -1,0 +1,7 @@
+COPD in Older Adults
+
+Chronic obstructive pulmonary disease is a long-term condition affecting airflow and breathing. In older adults, respiratory health may be influenced by existing conditions, activity level, medications, and environmental factors.
+
+An AI monitoring system can help identify changes in available respiratory information but should not diagnose COPD.
+
+This information is provided for health monitoring and educational purposes and does not replace professional medical advice.
