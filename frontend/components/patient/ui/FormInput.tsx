@@ -2,7 +2,7 @@
 
 interface Props {
   label: string;
-  value: string | number;
+  value: string | number | undefined | null;
   placeholder?: string;
   type?: string;
   onChange: (value: string) => void;
@@ -24,7 +24,7 @@ export default function FormInput({
 
       <input
         type={type}
-        value={value}
+        value={value ?? ""}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className="

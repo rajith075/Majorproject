@@ -126,3 +126,23 @@ class PatientResponse(PatientCreate):
 
     class Config:
         from_attributes = True
+
+
+# ==========================================================
+# Caregiver Assignment
+# ==========================================================
+
+class CaregiverResponse(BaseModel):
+
+    id: int
+    full_name: str
+    email: str
+    phone: str
+
+    class Config:
+        from_attributes = True
+
+
+class CaregiverAssignment(BaseModel):
+
+    caregiver_id: int

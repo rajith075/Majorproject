@@ -1,31 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
-
 import DashboardHeader from "@/components/dashboard/dashboard-header";
 import OverviewSection from "@/components/dashboard/OverviewSection";
 import HealthScoreTrend from "@/components/dashboard/HealthScoreTrend";
 
-import { PatientService } from "@/services/patient.service";
-
 export default function DashboardPage() {
-  useEffect(() => {
-    const loadPatient = async () => {
-      console.log("DASHBOARD: Loading patient...");
-
-      const patient = await PatientService.loadPatient();
-
-      console.log(
-        "DASHBOARD: Patient result:",
-        patient
-      );
-    };
-
-    loadPatient();
-  }, []);
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F8F5FF]">
+
+      {/* ======================================================
+          Ambient Background
+      ====================================================== */}
 
       {/* Large Ambient Glow - Top Left */}
       <div className="absolute -top-56 -left-48 h-[650px] w-[650px] rounded-full bg-violet-400/25 blur-[180px]" />
@@ -81,21 +66,41 @@ export default function DashboardPage() {
         "
       />
 
-      {/* Content */}
-      <main className="relative z-10 mx-auto max-w-[1600px] space-y-8 px-8 py-8">
+      {/* ======================================================
+          Dashboard Content
+      ====================================================== */}
 
-        {/* Patient Header */}
+      <main
+        className="
+          relative
+          z-10
+          mx-auto
+          max-w-[1600px]
+          space-y-8
+          px-8
+          py-8
+        "
+      >
+
+        {/* ==================================================
+            Patient Header
+            ================================================== */}
+
         <DashboardHeader />
 
-        {/* AI Health Score + AI Risk Assessment
-            + Executive Health Assessment */}
+        {/* ==================================================
+            AI Health Overview
+            ================================================== */}
+
         <OverviewSection />
 
-        {/* Health Trend */}
+        {/* ==================================================
+            Health Score Trend
+            ================================================== */}
+
         <HealthScoreTrend />
 
       </main>
-
     </div>
   );
 }

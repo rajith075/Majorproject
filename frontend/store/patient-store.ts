@@ -31,23 +31,59 @@ export interface Patient {
 }
 
 interface PatientStore {
+  // Family member → currently selected / owned patient
   patient: Patient | null;
+
+  // Caregiver → all assigned patients
+  patients: Patient[];
 
   setPatient: (patient: Patient) => void;
 
+  setPatients: (patients: Patient[]) => void;
+
   clearPatient: () => void;
+
+  clearPatients: () => void;
 }
 
 export const usePatientStore = create<PatientStore>((set) => ({
   patient: null,
+
+  patients: [],
+
+  // ==========================================================
+  // Family Member
+  // ==========================================================
 
   setPatient: (patient) =>
     set({
       patient,
     }),
 
+  // ==========================================================
+  // Caregiver
+  // ==========================================================
+
+  setPatients: (patients) =>
+    set({
+      patients,
+    }),
+
+  // ==========================================================
+  // Clear Family Patient
+  // ==========================================================
+
   clearPatient: () =>
     set({
       patient: null,
+    }),
+
+  // ==========================================================
+  // Clear Caregiver Patients
+  // ==========================================================
+
+  clearPatients: () =>
+    set({
+      patients: [],
     }),
 }));

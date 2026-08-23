@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.auth import RegisterRequest
+
 from app.core.security import (
     hash_password,
     verify_password,
@@ -10,11 +11,19 @@ from app.core.security import (
 
 class AuthService:
 
+    # ==========================================================
+    # Register
+    # ==========================================================
+
     @staticmethod
     def register(
         db: Session,
         request: RegisterRequest,
     ):
+
+        # ------------------------------------------------------
+        # Check existing email
+        # ------------------------------------------------------
 
         existing = (
             db.query(User)
@@ -25,11 +34,31 @@ class AuthService:
         if existing:
             return None
 
+        # ------------------------------------------------------
+        # Validate role
+        # ------------------------------------------------------
+
+        allowed_roles = {
+            "family",
+            "caregiver",
+            "doctor",
+        }
+
+        role = request.role.lower().strip()
+
+        if role not in allowed_roles:
+            return None
+
+        # ------------------------------------------------------
+        # Create user
+        # ------------------------------------------------------
+
         user = User(
             full_name=request.full_name,
             email=request.email,
             phone=request.phone,
             password=hash_password(request.password),
+            role=role,
         )
 
         db.add(user)
@@ -37,6 +66,10 @@ class AuthService:
         db.refresh(user)
 
         return user
+
+    # ==========================================================
+    # Login
+    # ==========================================================
 
     @staticmethod
     def login(

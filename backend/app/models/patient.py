@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -20,10 +22,31 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
+    # Patient registration timestamp
+    # Used to identify the most recently registered patient
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+    )
+
+    # Family member / patient owner
     user_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
+    )
+
+    # ==========================================================
+    # Caregiver Assignment
+    # ==========================================================
+
+    # Actual User ID of the selected virtual caregiver
+    caregiver_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
     )
 
     # ==========================================================
@@ -108,8 +131,6 @@ class Patient(Base):
 
     # ==========================================================
     # Medical Information
-    # (Temporary - will migrate fully to PatientCondition
-    # and Medication tables later)
     # ==========================================================
 
     medical_conditions = Column(Text)
@@ -136,6 +157,7 @@ class Patient(Base):
 
     assigned_doctor = Column(String(100))
 
+    # Existing field kept for backward compatibility
     assigned_caregiver = Column(String(100))
 
     hospital = Column(String(100))

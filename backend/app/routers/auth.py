@@ -3,9 +3,16 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.schemas.auth import RegisterRequest, LoginRequest
+from app.schemas.auth import (
+    RegisterRequest,
+    LoginRequest,
+    UserResponse,
+)
 from app.services.auth_service import AuthService
 from app.core.security import create_access_token
+from app.core.dependencies import get_current_user
+from app.models.user import User
+
 
 router = APIRouter(
     prefix="/auth",
@@ -83,7 +90,7 @@ def token_login(
 
     user = AuthService.login(
         db,
-        form_data.username,   # Enter email in Swagger username field
+        form_data.username,
         form_data.password,
     )
 
@@ -104,3 +111,17 @@ def token_login(
         "access_token": token,
         "token_type": "bearer",
     }
+
+
+# ==========================================================
+# Get Current Logged-in User
+# ==========================================================
+
+@router.get(
+    "/me",
+    response_model=UserResponse,
+)
+def get_me(
+    current_user: User = Depends(get_current_user),
+):
+    return current_user

@@ -30,8 +30,15 @@ export default function PatientWizard() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  // ==========================================================
+  // PATIENT DATA
+  // ==========================================================
+
   const [patientData, setPatientData] = useState({
-    // Basic Info
+    // ========================================================
+    // BASIC INFORMATION
+    // ========================================================
+
     full_name: "",
     age: 0,
     gender: "",
@@ -39,70 +46,198 @@ export default function PatientWizard() {
     phone: "",
     address: "",
 
-    // Medical
+    // ========================================================
+    // MEDICAL INFORMATION
+    // ========================================================
+
     medical_conditions: [] as string[],
     allergies: [] as string[],
     medications: [] as string[],
 
-    // Emergency
+    // ========================================================
+    // EMERGENCY CONTACT
+    // ========================================================
+
     emergency_contact_name: "",
     emergency_contact_phone: "",
     relationship: "",
     secondary_contact: "",
 
-    // Care Team
+    // ========================================================
+    // CARE TEAM
+    //
+    // IMPORTANT:
+    // Caregiver is intentionally NOT selected here.
+    // Caregiver selection happens after patient creation.
+    // ========================================================
+
     assigned_doctor: "",
-    assigned_caregiver: "",
     hospital: "",
     doctor_phone: "",
 
-    // Lifestyle
+    // ========================================================
+    // LIFESTYLE
+    // ========================================================
+
     mobility: "",
     memory_status: "",
     notes: "",
   });
 
+  // ==========================================================
+  // UPDATE PATIENT DATA
+  // ==========================================================
+
   const updatePatientData = (
     data: Partial<typeof patientData>
   ) => {
-    setPatientData((prev) => ({
-      ...prev,
+    setPatientData((previous) => ({
+      ...previous,
       ...data,
     }));
   };
+
+  // ==========================================================
+  // CREATE PATIENT
+  // ==========================================================
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
 
-      const patient = await createPatient({
+      console.log(
+        "================================================"
+      );
+      console.log("FAMILY: CREATING PATIENT");
+      console.log(
+        "================================================"
+      );
+
+      console.log(
+        "PATIENT FORM DATA:",
+        patientData
+      );
+
+      // ------------------------------------------------------
+      // Convert array fields into backend-compatible strings
+      // ------------------------------------------------------
+
+      const payload = {
         ...patientData,
+
         medical_conditions:
           patientData.medical_conditions.join(", "),
+
         allergies:
           patientData.allergies.join(", "),
+
         medications:
           patientData.medications.join(", "),
-      });
+      };
 
-      // Store newly created patient in Zustand
+      console.log(
+        "PATIENT CREATE PAYLOAD:",
+        payload
+      );
+
+      // ------------------------------------------------------
+      // Create patient
+      // Backend automatically associates patient with the
+      // authenticated family member through JWT.
+      // ------------------------------------------------------
+
+      const patient = await createPatient(payload);
+
+      console.log(
+        "================================================"
+      );
+      console.log("FAMILY: PATIENT CREATED SUCCESSFULLY");
+      console.log(
+        "================================================"
+      );
+
+      console.log(
+        "CREATED PATIENT:",
+        patient
+      );
+
+      console.log(
+        "PATIENT ID:",
+        patient?.id
+      );
+
+      console.log(
+        "PATIENT NAME:",
+        patient?.full_name
+      );
+
+      // ------------------------------------------------------
+      // Store patient globally
+      // ------------------------------------------------------
+
       setPatient(patient);
 
+      // ------------------------------------------------------
+      // Stop loading
+      // ------------------------------------------------------
+
       setLoading(false);
+
+      // ------------------------------------------------------
+      // Show premium success state
+      // ------------------------------------------------------
+
       setSuccess(true);
 
-      toast.success("Patient Registered Successfully!", {
-        description:
-          "Welcome to Elderly Care AI. Redirecting to your dashboard...",
-      });
+      toast.success(
+        "Patient Profile Created Successfully!",
+        {
+          description:
+            "Your elderly care profile is ready. Let's choose a caregiver.",
+        }
+      );
+
+      // ------------------------------------------------------
+      // Give user time to see success animation
+      // ------------------------------------------------------
 
       await new Promise((resolve) =>
         setTimeout(resolve, 2000)
       );
 
-      router.replace("/dashboard");
+      // ------------------------------------------------------
+      // IMPORTANT:
+      //
+      // DO NOT GO TO /dashboard HERE.
+      //
+      // Family member must select a caregiver first.
+      // ------------------------------------------------------
+
+      console.log(
+        "FAMILY: REDIRECTING TO CAREGIVER SELECTION"
+      );
+
+      router.replace(
+        "/caregiver-selection"
+      );
+
     } catch (error: any) {
-      console.error(error);
+      console.error(
+        "================================================"
+      );
+
+      console.error(
+        "FAMILY: PATIENT CREATION FAILED"
+      );
+
+      console.error(
+        "ERROR:",
+        error
+      );
+
+      console.error(
+        "================================================"
+      );
 
       setLoading(false);
 
@@ -113,20 +248,59 @@ export default function PatientWizard() {
     }
   };
 
+  // ==========================================================
+  // UI
+  // ==========================================================
+
   return (
     <div className="mx-auto max-w-6xl">
-      <LoadingOverlay open={loading} />
 
-      <SuccessDialog open={success} />
+      {/* =====================================================
+          PREMIUM LOADING OVERLAY
+      ===================================================== */}
+
+      <LoadingOverlay
+        open={loading}
+      />
+
+      {/* =====================================================
+          SUCCESS DIALOG
+      ===================================================== */}
+
+      <SuccessDialog
+        open={success}
+      />
+
+      {/* =====================================================
+          STEP INDICATOR
+      ===================================================== */}
 
       <StepIndicator
         currentStep={step}
         totalSteps={7}
       />
 
-      <div className="mt-10 rounded-[32px] border border-violet-100 bg-white/80 p-10 shadow-xl backdrop-blur-xl">
+      {/* =====================================================
+          WIZARD CONTAINER
+      ===================================================== */}
 
-        {/* STEP 1 */}
+      <div
+        className="
+          mt-10
+          rounded-[32px]
+          border
+          border-violet-100
+          bg-white/80
+          p-10
+          shadow-xl
+          backdrop-blur-xl
+        "
+      >
+
+        {/* ===================================================
+            STEP 1 — BASIC INFORMATION
+        =================================================== */}
+
         {step === 1 && (
           <BasicInfoStep
             data={patientData}
@@ -135,7 +309,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 2 */}
+        {/* ===================================================
+            STEP 2 — MEDICAL INFORMATION
+        =================================================== */}
+
         {step === 2 && (
           <MedicalInfoStep
             data={patientData}
@@ -145,7 +322,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 3 */}
+        {/* ===================================================
+            STEP 3 — MEDICATION
+        =================================================== */}
+
         {step === 3 && (
           <MedicationStep
             data={patientData}
@@ -155,7 +335,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 4 */}
+        {/* ===================================================
+            STEP 4 — EMERGENCY CONTACT
+        =================================================== */}
+
         {step === 4 && (
           <EmergencyContactStep
             data={patientData}
@@ -165,7 +348,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 5 */}
+        {/* ===================================================
+            STEP 5 — CARE TEAM
+        =================================================== */}
+
         {step === 5 && (
           <CareTeamStep
             data={patientData}
@@ -175,7 +361,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 6 */}
+        {/* ===================================================
+            STEP 6 — LIFESTYLE
+        =================================================== */}
+
         {step === 6 && (
           <LifestyleStep
             data={patientData}
@@ -185,7 +374,10 @@ export default function PatientWizard() {
           />
         )}
 
-        {/* STEP 7 */}
+        {/* ===================================================
+            STEP 7 — REVIEW
+        =================================================== */}
+
         {step === 7 && (
           <ReviewStep
             data={patientData}

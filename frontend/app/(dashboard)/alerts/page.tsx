@@ -71,11 +71,23 @@ export default function AlertsPage() {
   };
 
   // ==========================================================
-  // LOAD WHEN PATIENT AVAILABLE
+  // LOAD WHEN PATIENT AVAILABLE, THEN POLL EVERY 3 SECONDS
+  // SO A NEW SOS SHOWS UP WITHOUT A MANUAL REFRESH
   // ==========================================================
 
   useEffect(() => {
+    if (!patient?.id) {
+      setLoading(false);
+      return;
+    }
+
     loadAlerts();
+
+    const interval = setInterval(() => {
+      loadAlerts();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [patient?.id]);
 
   // ==========================================================
@@ -177,6 +189,13 @@ export default function AlertsPage() {
       alert.status === "RESOLVED"
   );
 
+  // Active manual SOS alerts, pulled out of the same alerts list
+  const activeSOSAlerts = alerts.filter(
+    (alert) =>
+      alert.event_type === "SOS" &&
+      alert.status !== "RESOLVED"
+  );
+
   // ==========================================================
   // PAGE
   // ==========================================================
@@ -215,6 +234,66 @@ export default function AlertsPage() {
         </div>
 
       </div>
+
+      {/* ================================================== */}
+      {/* HIGHEST PRIORITY: MANUAL SOS ALERTS */}
+      {/* ================================================== */}
+
+      {activeSOSAlerts.map((alert) => (
+        <div
+          key={alert.id}
+          className="mb-6 rounded-3xl border-4 border-red-500 bg-red-50 p-6 shadow-2xl"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-red-600 text-3xl">
+              🆘
+            </div>
+
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wider text-red-600">
+                    Highest Priority Emergency
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-black text-red-800">
+                    EMERGENCY SOS
+                  </h2>
+                </div>
+
+                <span className="rounded-full bg-red-600 px-4 py-2 text-xs font-black text-white">
+                  SOS
+                </span>
+              </div>
+
+              <p className="mt-4 text-base font-semibold text-red-700">
+                The elderly patient manually triggered
+                an emergency SOS request.
+              </p>
+
+              <div className="mt-4 rounded-xl bg-white p-4">
+                <p className="text-sm text-slate-500">
+                  Detected
+                </p>
+
+                <p className="font-bold text-slate-900">
+                  {new Date(
+                    alert.detected_at
+                  ).toLocaleString()}
+                </p>
+              </div>
+
+              {alert.latitude &&
+                alert.longitude && (
+                  <div className="mt-3 text-sm text-slate-600">
+                    📍 Location: {alert.latitude},{" "}
+                    {alert.longitude}
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+      ))}
 
       {/* ================================================== */}
       {/* ACTIVE EMERGENCIES */}
@@ -658,7 +737,8 @@ export default function AlertsPage() {
       {/* NO ACTIVE EMERGENCIES */}
       {/* ================================================== */}
 
-      {activeAlerts.length === 0 && (
+      {activeAlerts.length === 0 &&
+        activeSOSAlerts.length === 0 && (
 
         <div className="rounded-[32px] border border-emerald-100 bg-white p-10 shadow-sm">
 
@@ -830,7 +910,8 @@ export default function AlertsPage() {
       {/* ================================================== */}
 
       {historyAlerts.length === 0 &&
-        activeAlerts.length > 0 && (
+        (activeAlerts.length > 0 ||
+          activeSOSAlerts.length > 0) && (
 
           <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center">
 

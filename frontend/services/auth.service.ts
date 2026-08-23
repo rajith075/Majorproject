@@ -1,28 +1,102 @@
-class AuthServiceClass {
-  private readonly TOKEN_KEY = "token";
+import { getCurrentUser } from "@/services/auth/me";
+import { useAuthStore } from "@/store/auth.store";
 
-  getToken(): string |null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(this.TOKEN_KEY);
+export class AuthService {
+
+  // ==========================================================
+  // GET TOKEN
+  // ==========================================================
+
+  static getToken(): string | null {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return localStorage.getItem("token");
   }
 
-  setToken(token: string) {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(this.TOKEN_KEY, token);
+
+  // ==========================================================
+  // REMOVE TOKEN
+  // ==========================================================
+
+  static removeToken(): void {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    localStorage.removeItem("token");
   }
 
-  removeToken() {
-    if (typeof window === "undefined") return;
-    localStorage.removeItem(this.TOKEN_KEY);
+
+  // ==========================================================
+  // LOAD CURRENT USER
+  // ==========================================================
+
+  static async loadCurrentUser() {
+    try {
+
+      console.log("🔵 AUTH: Loading current user...");
+
+      const user = await getCurrentUser();
+
+      console.log(
+        "👤 AUTH: Current user:",
+        user
+      );
+
+      useAuthStore
+        .getState()
+        .setUser(user);
+
+      return user;
+
+    } catch (error) {
+
+      console.error(
+        "❌ AUTH: Failed to load current user:",
+        error
+      );
+
+      useAuthStore
+        .getState()
+        .clearUser();
+
+      return null;
+    }
   }
 
-  logout() {
-    this.removeToken();
+
+  // ==========================================================
+  // CLEAR USER
+  // ==========================================================
+
+  static clearUser(): void {
+
+    console.log(
+      "🧹 AUTH: Clearing current user..."
+    );
+
+    useAuthStore
+      .getState()
+      .clearUser();
   }
 
-  isAuthenticated() {
-    return !!this.getToken();
+
+  // ==========================================================
+  // LOGOUT
+  // ==========================================================
+
+  static logout(): void {
+
+    console.log(
+      "🚪 AUTH: Logging out..."
+    );
+
+    // Remove JWT
+    AuthService.removeToken();
+
+    // Clear Zustand user
+    AuthService.clearUser();
   }
 }
-
-export const AuthService = new AuthServiceClass();

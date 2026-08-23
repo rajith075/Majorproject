@@ -22,51 +22,47 @@ export default function CareTeamStep({
 
       <SectionTitle
         title="Care Team"
-        subtitle="Assign the healthcare professionals responsible for the patient's care."
+        subtitle="Add the healthcare professionals responsible for the patient's care."
       />
 
       <div className="grid grid-cols-2 gap-8">
+
+        {/* Doctor Name */}
 
         <FormInput
           label="Doctor Name"
           value={data.assigned_doctor}
           placeholder="Dr. John Smith"
-          onChange={(v) =>
+          onChange={(value) =>
             updateData({
-              assigned_doctor: v,
+              assigned_doctor: value,
             })
           }
         />
+
+        {/* Hospital */}
 
         <FormInput
           label="Hospital"
           value={data.hospital}
           placeholder="Hospital Name"
-          onChange={(v) =>
+          onChange={(value) =>
             updateData({
-              hospital: v,
+              hospital: value,
             })
           }
         />
 
-        <FormInput
-          label="Assigned Caregiver"
-          value={data.assigned_caregiver}
-          placeholder="Caregiver Name"
-          onChange={(v) =>
-            updateData({
-              assigned_caregiver: v,
-            })
-          }
-        />
+        {/* Doctor Contact */}
 
         <FormInput
           label="Doctor Contact"
           value={data.doctor_phone}
           placeholder="Doctor Phone"
-          onChange={(v) =>
+          type="tel"
+          onChange={(value) =>
             updateData({
-              doctor_phone: v,
+              doctor_phone: value,
             })
           }
         />

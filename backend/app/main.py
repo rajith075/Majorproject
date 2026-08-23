@@ -13,6 +13,7 @@ from app.routers.condition import router as condition_router
 from app.routers.vital_log import router as vital_log_router
 from app.routers.ai import router as ai_router
 from app.routers.emergency import router as emergency_router
+from app.routers.caregiver import router as caregiver_router
 
 # ==========================================================
 # Models
@@ -70,6 +71,7 @@ app.include_router(condition_router)
 app.include_router(vital_log_router)
 app.include_router(ai_router)
 app.include_router(emergency_router)
+app.include_router(caregiver_router)
 
 # ==========================================================
 # Root Endpoint
