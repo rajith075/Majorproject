@@ -22,6 +22,44 @@ router = APIRouter(
 )
 
 
+# ==========================================================
+# FAMILY MEMBER
+# Get latest vitals for the patient belonging to current user
+# ==========================================================
+
+@router.get(
+    "/me",
+    response_model=VitalLogResponse | None,
+)
+def get_my_latest_vitals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found.",
+        )
+
+    return vital_log_service.get_latest_vitals(
+        db=db,
+        patient_id=patient.id,
+    )
+
+
+# ==========================================================
+# CREATE VITAL LOG
+# ==========================================================
+
 @router.post(
     "/{patient_id}",
     response_model=VitalLogResponse,
@@ -34,20 +72,15 @@ def create_vital_log(
 ):
 
     patient = (
-
         db.query(Patient)
-
         .filter(
             Patient.id == patient_id,
             Patient.user_id == current_user.id,
         )
-
         .first()
-
     )
 
     if not patient:
-
         raise HTTPException(
             status_code=404,
             detail="Patient not found.",

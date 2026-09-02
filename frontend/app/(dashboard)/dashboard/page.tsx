@@ -4,7 +4,34 @@ import DashboardHeader from "@/components/dashboard/dashboard-header";
 import OverviewSection from "@/components/dashboard/OverviewSection";
 import HealthScoreTrend from "@/components/dashboard/HealthScoreTrend";
 
+import FamilyDashboard from "@/components/family/dashboard/FamilyDashboard";
+import DoctorDashboard from "@/components/doctor/dashboard/DoctorDashboard";
+
+import { useAuthStore } from "@/store/auth.store";
+
 export default function DashboardPage() {
+  const user = useAuthStore((state) => state.user);
+
+  // ==========================================================
+  // FAMILY MEMBER DASHBOARD
+  // ==========================================================
+
+  if (user?.role === "family") {
+    return <FamilyDashboard />;
+  }
+
+  // ==========================================================
+  // DOCTOR DASHBOARD
+  // ==========================================================
+
+  if (user?.role === "doctor") {
+    return <DoctorDashboard />;
+  }
+
+  // ==========================================================
+  // EXISTING CAREGIVER / DEFAULT DASHBOARD
+  // ==========================================================
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F8F5FF]">
 
@@ -67,7 +94,7 @@ export default function DashboardPage() {
       />
 
       {/* ======================================================
-          Dashboard Content
+          Existing Caregiver Dashboard
       ====================================================== */}
 
       <main
@@ -82,21 +109,9 @@ export default function DashboardPage() {
         "
       >
 
-        {/* ==================================================
-            Patient Header
-            ================================================== */}
-
         <DashboardHeader />
 
-        {/* ==================================================
-            AI Health Overview
-            ================================================== */}
-
         <OverviewSection />
-
-        {/* ==================================================
-            Health Score Trend
-            ================================================== */}
 
         <HealthScoreTrend />
 

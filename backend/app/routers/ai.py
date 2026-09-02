@@ -32,6 +32,45 @@ router = APIRouter(
 
 
 # ======================================================
+# Patient Authorization Helper
+# ======================================================
+
+def get_authorized_patient(
+    db: Session,
+    patient_id: int,
+    current_user: User,
+):
+    """
+    Return the patient only if the current user is authorized.
+
+    Authorized users:
+    1. Family member who registered/owns the patient
+    2. Caregiver assigned to the patient
+    """
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.id == patient_id,
+            (
+                (Patient.user_id == current_user.id)
+                |
+                (Patient.caregiver_id == current_user.id)
+            ),
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found or access denied.",
+        )
+
+    return patient
+
+
+# ======================================================
 # AI Prediction
 # ======================================================
 
@@ -43,23 +82,14 @@ def predict_patient(
 ):
 
     # ==================================================
-    # Verify Patient
+    # Verify Patient Authorization
     # ==================================================
 
-    patient = (
-        db.query(Patient)
-        .filter(
-            Patient.id == patient_id,
-            Patient.user_id == current_user.id,
-        )
-        .first()
+    patient = get_authorized_patient(
+        db=db,
+        patient_id=patient_id,
+        current_user=current_user,
     )
-
-    if not patient:
-        raise HTTPException(
-            status_code=404,
-            detail="Patient not found.",
-        )
 
     # ==================================================
     # Build Complete Patient Profile
@@ -101,23 +131,14 @@ def get_latest_prediction(
 ):
 
     # ==================================================
-    # Verify Patient
+    # Verify Patient Authorization
     # ==================================================
 
-    patient = (
-        db.query(Patient)
-        .filter(
-            Patient.id == patient_id,
-            Patient.user_id == current_user.id,
-        )
-        .first()
+    patient = get_authorized_patient(
+        db=db,
+        patient_id=patient_id,
+        current_user=current_user,
     )
-
-    if not patient:
-        raise HTTPException(
-            status_code=404,
-            detail="Patient not found.",
-        )
 
     # ==================================================
     # Get Latest Prediction
@@ -126,7 +147,7 @@ def get_latest_prediction(
     prediction = (
         prediction_history_service.get_latest_prediction(
             db,
-            patient_id,
+            patient.id,
         )
     )
 
@@ -154,23 +175,14 @@ def get_prediction_history(
 ):
 
     # ==================================================
-    # Verify Patient
+    # Verify Patient Authorization
     # ==================================================
 
-    patient = (
-        db.query(Patient)
-        .filter(
-            Patient.id == patient_id,
-            Patient.user_id == current_user.id,
-        )
-        .first()
+    patient = get_authorized_patient(
+        db=db,
+        patient_id=patient_id,
+        current_user=current_user,
     )
-
-    if not patient:
-        raise HTTPException(
-            status_code=404,
-            detail="Patient not found.",
-        )
 
     # ==================================================
     # Get Prediction History
@@ -179,7 +191,7 @@ def get_prediction_history(
     history = (
         prediction_history_service.get_prediction_history(
             db,
-            patient_id,
+            patient.id,
         )
     )
 

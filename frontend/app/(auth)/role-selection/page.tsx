@@ -54,11 +54,11 @@ export default function RoleSelectionPage() {
       points: ["Clinical insights", "AI-assisted monitoring", "Chart review"],
 
       action: () => {
-        // Doctor flow will be implemented later
+        router.push("/doctor-register");
       },
 
-      badge: "Coming Soon",
-      active: false,
+      badge: "Available Now",
+      active: true,
     },
   ];
 
@@ -395,7 +395,7 @@ export default function RoleSelectionPage() {
             <div className="mt-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:gap-8">
               <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
                 <ShieldCheck className="h-4 w-4 text-violet-400" />
-                End-to-end encrypted data
+                
               </div>
               <div className="hidden h-3 w-px bg-slate-300 sm:block" />
               <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">

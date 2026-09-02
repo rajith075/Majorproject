@@ -87,3 +87,5 @@ Thumbs.db
 *.zip
 *.tar
 *.tar.gz
+# Uploaded user documents
+backend/uploads/

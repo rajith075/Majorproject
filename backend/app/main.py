@@ -14,6 +14,8 @@ from app.routers.vital_log import router as vital_log_router
 from app.routers.ai import router as ai_router
 from app.routers.emergency import router as emergency_router
 from app.routers.caregiver import router as caregiver_router
+from app.routers.medication import router as medication_router
+from app.routers.doctor import router as doctor_router
 
 # ==========================================================
 # Models
@@ -30,6 +32,7 @@ from app.models.emergency_contact import EmergencyContact
 from app.models.vital_log import VitalLog
 from app.models.prediction_history import PredictionHistory
 from app.models.emergency_alert import EmergencyAlert
+from app.models.doctor_verification import DoctorVerification
 
 # ==========================================================
 # FastAPI App
@@ -72,6 +75,8 @@ app.include_router(vital_log_router)
 app.include_router(ai_router)
 app.include_router(emergency_router)
 app.include_router(caregiver_router)
+app.include_router(medication_router)
+app.include_router(doctor_router)
 
 # ==========================================================
 # Root Endpoint

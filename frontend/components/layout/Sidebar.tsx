@@ -1,13 +1,115 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+
+import {
+  LayoutDashboard,
+  HeartPulse,
+  Users,
+  BrainCircuit,
+  Pill,
+  FileText,
+  Bell,
+  Settings,
+  UserRound,
+} from "lucide-react";
+
 import { navigation } from "@/constants/navigation";
 import { cn } from "@/lib/utils";
-import { HeartPulse } from "lucide-react";
+import { HeartPulse as HeartPulseLogo } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
+
+const familyNavigation = [
+  {
+    title: "Overview",
+    section: "overview",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Patient",
+    section: "patient",
+    icon: UserRound,
+  },
+  {
+    title: "AI Insight",
+    section: "ai-insight",
+    icon: BrainCircuit,
+  },
+  {
+    title: "Health",
+    section: "health",
+    icon: HeartPulse,
+  },
+  {
+    title: "Medication",
+    section: "medication",
+    icon: Pill,
+  },
+  {
+    title: "Alerts",
+    section: "alerts",
+    icon: Bell,
+  },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const user = useAuthStore((state) => state.user);
+
+  const [activeSection, setActiveSection] = useState("overview");
+
+  const isFamily = user?.role === "family";
+
+  useEffect(() => {
+    if (!isFamily) return;
+
+    const sections = familyNavigation
+      .map((item) => document.getElementById(item.section))
+      .filter(Boolean) as HTMLElement[];
+
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSections = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort(
+            (a, b) =>
+              b.intersectionRatio - a.intersectionRatio
+          );
+
+        if (visibleSections.length > 0) {
+          setActiveSection(visibleSections[0].target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "-20% 0px -60% 0px",
+        threshold: [0.1, 0.25, 0.5],
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isFamily]);
+
+  const scrollToSection = (section: string) => {
+    const element = document.getElementById(section);
+
+    if (!element) return;
+
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    setActiveSection(section);
+  };
 
   return (
     <aside
@@ -51,7 +153,7 @@ export default function Sidebar() {
               shadow-lg
             "
           >
-            <HeartPulse size={28} />
+            <HeartPulseLogo size={28} />
           </div>
 
           <div>
@@ -68,53 +170,112 @@ export default function Sidebar() {
 
       {/* Navigation */}
 
-      <nav className="relative flex-1 space-y-2 p-5">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href;
+      {isFamily ? (
+        <nav className="relative flex-1 space-y-2 p-5">
+          {familyNavigation.map((item) => {
+            const Icon = item.icon;
+            const active = activeSection === item.section;
 
-          return (
-            <Link
-              key={item.title}
-              href={item.href}
-              className={cn(
-                `
-                group
-                flex
-                items-center
-                gap-4
-                rounded-2xl
-                px-5
-                py-4
-                text-slate-600
-                transition-all
-                duration-300
-                hover:bg-violet-50
-                hover:text-violet-700
-                `,
-                active &&
-                  `
-                  bg-gradient-to-r
-                  from-violet-500
-                  to-purple-500
-                  text-white
-                  shadow-lg
-                  `
-              )}
-            >
-              <Icon
-                size={20}
+            return (
+              <button
+                key={item.section}
+                type="button"
+                onClick={() =>
+                  scrollToSection(item.section)
+                }
                 className={cn(
-                  "transition-transform duration-300 group-hover:scale-110",
-                  active && "scale-110"
+                  `
+                    group
+                    flex
+                    w-full
+                    items-center
+                    gap-4
+                    rounded-2xl
+                    px-5
+                    py-4
+                    text-left
+                    text-slate-600
+                    transition-all
+                    duration-300
+                    hover:bg-violet-50
+                    hover:text-violet-700
+                  `,
+                  active &&
+                    `
+                    bg-gradient-to-r
+                    from-violet-500
+                    to-purple-500
+                    text-white
+                    shadow-lg
+                  `
                 )}
-              />
+              >
+                <Icon
+                  size={20}
+                  className={cn(
+                    "transition-transform duration-300 group-hover:scale-110",
+                    active && "scale-110"
+                  )}
+                />
 
-              <span className="font-medium">{item.title}</span>
-            </Link>
-          );
-        })}
-      </nav>
+                <span className="font-medium">
+                  {item.title}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
+      ) : (
+        <nav className="relative flex-1 space-y-2 p-5">
+          {navigation.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+
+            return (
+              <Link
+                key={item.title}
+                href={item.href}
+                className={cn(
+                  `
+                    group
+                    flex
+                    items-center
+                    gap-4
+                    rounded-2xl
+                    px-5
+                    py-4
+                    text-slate-600
+                    transition-all
+                    duration-300
+                    hover:bg-violet-50
+                    hover:text-violet-700
+                  `,
+                  active &&
+                    `
+                    bg-gradient-to-r
+                    from-violet-500
+                    to-purple-500
+                    text-white
+                    shadow-lg
+                  `
+                )}
+              >
+                <Icon
+                  size={20}
+                  className={cn(
+                    "transition-transform duration-300 group-hover:scale-110",
+                    active && "scale-110"
+                  )}
+                />
+
+                <span className="font-medium">
+                  {item.title}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Bottom Card */}
 

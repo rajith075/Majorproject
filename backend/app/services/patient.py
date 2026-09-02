@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.patient import Patient
 from app.models.user import User
+from app.models.medication import Medication
 from app.schemas.patient import PatientCreate
 
 
@@ -121,6 +122,28 @@ class PatientService:
         db.add(patient)
         db.commit()
         db.refresh(patient)
+
+        # ==========================================================
+        # CREATE INITIAL MEDICATION RECORDS
+        # ==========================================================
+
+        if request.medications:
+            medication_names = [
+                medicine.strip()
+                for medicine in request.medications.split(",")
+                if medicine.strip()
+            ]
+
+            for medicine_name in medication_names:
+                medication = Medication(
+                    patient_id=patient.id,
+                    medicine_name=medicine_name,
+                    active=True,
+                )
+
+                db.add(medication)
+
+            db.commit()
 
         return patient
 
