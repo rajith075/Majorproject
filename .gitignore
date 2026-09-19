@@ -89,3 +89,4 @@ Thumbs.db
 *.tar.gz
 # Uploaded user documents
 backend/uploads/
+firebase-service-account.json

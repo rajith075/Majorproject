@@ -1,3 +1,5 @@
+import os
+
 from sqlalchemy.orm import Session
 
 from app.models.patient import Patient
@@ -15,43 +17,44 @@ class EmergencyNotificationService:
         db: Session,
         patient: Patient,
         vital: VitalLog,
-        alerts,
+        alerts
     ):
 
+        # =====================================================
+        # NO ALERTS
+        # =====================================================
+
         if not alerts:
-            print("[EMERGENCY] No emergency alerts generated.")
+
+            print(
+                "[EMERGENCY] No emergency alerts generated."
+            )
+
             return
 
-        # ---------------------------------------------------------
-        # Find family member
-        # ---------------------------------------------------------
+        # =====================================================
+        # FIND FAMILY MEMBER
+        # =====================================================
 
-        family_member = (
-            db.query(User)
-            .filter(User.id == patient.user_id)
-            .first()
-        )
+        family_member = db.query(User).filter(
+            User.id == patient.user_id
+        ).first()
 
-        # ---------------------------------------------------------
-        # Find caregiver
-        # ---------------------------------------------------------
+        # =====================================================
+        # FIND CAREGIVER
+        # =====================================================
 
         caregiver = None
 
         if patient.caregiver_id:
-            caregiver = (
-                db.query(User)
-                .filter(User.id == patient.caregiver_id)
-                .first()
-            )
 
-        # ---------------------------------------------------------
-        # CONSOLIDATE ALERTS
-        #
-        # Critical > High > Moderate > Clinical
-        #
-        # Only ONE emergency notification is created.
-        # ---------------------------------------------------------
+            caregiver = db.query(User).filter(
+                User.id == patient.caregiver_id
+            ).first()
+
+        # =====================================================
+        # SELECT HIGHEST SEVERITY
+        # =====================================================
 
         severity_priority = {
             "Critical": 4,
@@ -62,168 +65,278 @@ class EmergencyNotificationService:
 
         emergency_alert = max(
             alerts,
-            key=lambda alert: severity_priority.get(
-                str(alert.get("severity", "")).strip(),
-                0,
-            ),
+            key=lambda alert:
+                severity_priority.get(
+                    str(
+                        alert.get(
+                            "severity",
+                            ""
+                        )
+                    ).strip(),
+                    0
+                )
         )
 
         severity = str(
-            emergency_alert.get("severity", "")
+            emergency_alert.get(
+                "severity",
+                ""
+            )
         ).strip()
 
         title = emergency_alert.get(
             "title",
-            "Health Alert",
+            "Health Alert"
         )
 
         message = emergency_alert.get(
             "message",
-            "An abnormal health condition was detected.",
+            "An abnormal health condition was detected."
         )
 
-        # ---------------------------------------------------------
-        # Only High and Critical become emergency notifications.
-        # ---------------------------------------------------------
+        # =====================================================
+        # DETERMINE EMERGENCY STATUS
+        # =====================================================
 
         if severity == "Critical":
+
             emergency_status = "CRITICAL"
 
         elif severity == "High":
+
             emergency_status = "WARNING"
 
         else:
+
             print(
                 f"[EMERGENCY] Alert ignored: "
                 f"{severity} - {title}"
             )
+
             return
 
-        # ---------------------------------------------------------
-        # Create ONE emergency database record
-        # ---------------------------------------------------------
+        # =====================================================
+        # CREATE EMERGENCY RECORD
+        # =====================================================
 
         emergency_alert_record = EmergencyAlert(
+
             patient_id=patient.id,
+
             event_type=title,
+
             status=emergency_status,
+
             latitude=None,
+
             longitude=None,
+
             patient_confirmation=None,
+
             caregiver_confirmation=None,
+
             resolution=None,
+
             resolved_at=None,
+
             notes=message,
+
             vital_log_id=vital.id,
         )
 
-        db.add(emergency_alert_record)
-        db.commit()
-        db.refresh(emergency_alert_record)
-
-        # ---------------------------------------------------------
-        # Notification message
-        # ---------------------------------------------------------
-
-        notification_message = (
-            f"ElderlyCare {emergency_status} Alert. "
-            f"Patient ID {patient.id}. "
-            f"{title}. "
-            f"{message}"
+        db.add(
+            emergency_alert_record
         )
 
-        sms_success = False
+        db.commit()
+
+        db.refresh(
+            emergency_alert_record
+        )
+
+        # =====================================================
+        # PUSH NOTIFICATION
+        # =====================================================
+
+        push_success = False
+
+        fcm_test_token = os.getenv(
+            "FCM_TEST_TOKEN"
+        )
+
+        if fcm_test_token:
+
+            push_title = (
+                f"ElderCare {emergency_status}"
+            )
+
+            push_message = (
+                f"Patient {patient.id}: "
+                f"{title}. "
+                f"{message}"
+            )
+
+            push_success = (
+                notification_service.send_push_notification(
+                    token=fcm_test_token,
+                    title=push_title,
+                    message=push_message,
+                    data={
+                        "type": "emergency",
+                        "patient_id": patient.id,
+                        "emergency_id": (
+                            emergency_alert_record.id
+                        ),
+                        "severity": severity,
+                        "event": str(title),
+                    },
+                )
+            )
+
+        else:
+
+            print(
+                "[FCM] FCM_TEST_TOKEN is not configured."
+            )
+
+        # =====================================================
+        # CRITICAL → TWILIO CALL
+        # =====================================================
+
         call_success = False
-
-        # ---------------------------------------------------------
-        # SMS → Family
-        # ---------------------------------------------------------
-
-        if family_member and family_member.phone:
-
-            success = notification_service.send_sms(
-                family_member.phone,
-                notification_message,
-            )
-
-            if success:
-                sms_success = True
-
-        # ---------------------------------------------------------
-        # SMS → Caregiver
-        # ---------------------------------------------------------
-
-        if caregiver and caregiver.phone:
-
-            success = notification_service.send_sms(
-                caregiver.phone,
-                notification_message,
-            )
-
-            if success:
-                sms_success = True
-
-        # ---------------------------------------------------------
-        # CRITICAL → CALL
-        # ---------------------------------------------------------
 
         if emergency_status == "CRITICAL":
 
-            # Family call
-            if family_member and family_member.phone:
+            notification_message = (
+                f"ElderCare {emergency_status} Alert. "
+                f"Patient ID {patient.id}. "
+                f"{title}. "
+                f"{message}"
+            )
 
-                success = notification_service.make_call(
-                    family_member.phone,
-                    notification_message,
+            notification_recipients = set()
+
+            test_phone = os.getenv(
+                "TEST_NOTIFICATION_PHONE"
+            )
+
+            if test_phone:
+
+                test_phone = (
+                    test_phone.strip()
+                )
+
+                print(
+                    "[EMERGENCY] "
+                    "TEST NOTIFICATION PHONE ENABLED: "
+                    f"{test_phone}"
+                )
+
+                notification_recipients.add(
+                    test_phone
+                )
+
+            else:
+
+                if (
+                    family_member
+                    and family_member.phone
+                ):
+
+                    notification_recipients.add(
+                        str(
+                            family_member.phone
+                        ).strip()
+                    )
+
+                if (
+                    caregiver
+                    and caregiver.phone
+                ):
+
+                    notification_recipients.add(
+                        str(
+                            caregiver.phone
+                        ).strip()
+                    )
+
+            # =============================================
+            # TWILIO CALL
+            # =============================================
+
+            for phone in notification_recipients:
+
+                success = (
+                    notification_service.make_call(
+                        phone,
+                        notification_message
+                    )
                 )
 
                 if success:
+
                     call_success = True
 
-            # Caregiver call
-            if caregiver and caregiver.phone:
-
-                success = notification_service.make_call(
-                    caregiver.phone,
-                    notification_message,
-                )
-
-                if success:
-                    call_success = True
-
-        # ---------------------------------------------------------
-        # Store notification result in notes
-        #
-        # emergency_alerts table does not have sms_sent/call_sent
-        # columns, so we keep the result in notes.
-        # ---------------------------------------------------------
+        # =====================================================
+        # UPDATE EMERGENCY RECORD
+        # =====================================================
 
         notification_status = (
-            f" | SMS={'SENT' if sms_success else 'FAILED'}"
-            f" | CALL={'SENT' if call_success else 'NOT_SENT'}"
+            f" | PUSH="
+            f"{'SENT' if push_success else 'FAILED'}"
+            f" | CALL="
+            f"{'SENT' if call_success else 'NOT_SENT'}"
         )
 
         emergency_alert_record.notes = (
-            f"{message}{notification_status}"
+            f"{message}"
+            f"{notification_status}"
         )
 
         db.commit()
 
-        # ---------------------------------------------------------
-        # Console output
-        # ---------------------------------------------------------
+        # =====================================================
+        # LOG
+        # =====================================================
 
         print("=" * 70)
-        print("EMERGENCY NOTIFICATION PROCESSED")
+        print(
+            "EMERGENCY NOTIFICATION PROCESSED"
+        )
         print("=" * 70)
-        print(f"Patient       : {patient.id}")
-        print(f"Emergency ID  : {emergency_alert_record.id}")
-        print(f"Event Type    : {title}")
-        print(f"Status        : {emergency_status}")
-        print(f"Vital Log     : {vital.id}")
-        print(f"SMS Sent      : {sms_success}")
-        print(f"Call Sent     : {call_success}")
+
+        print(
+            f"Patient       : {patient.id}"
+        )
+
+        print(
+            f"Emergency ID  : "
+            f"{emergency_alert_record.id}"
+        )
+
+        print(
+            f"Event Type    : {title}"
+        )
+
+        print(
+            f"Status        : {emergency_status}"
+        )
+
+        print(
+            f"Vital Log     : {vital.id}"
+        )
+
+        print(
+            f"FCM Push      : {push_success}"
+        )
+
+        print(
+            f"Twilio Call   : {call_success}"
+        )
+
         print("=" * 70)
 
 
-emergency_notification_service = EmergencyNotificationService()
+emergency_notification_service = (
+    EmergencyNotificationService()
+)

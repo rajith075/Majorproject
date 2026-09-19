@@ -19,6 +19,8 @@ from app.models.consultation import Consultation
 from app.models.doctor_profile import DoctorProfile
 from app.models.emergency_alert import EmergencyAlert
 from app.routers.emergency import router as emergency_router
+from app.routers.twilio_voice import router as twilio_voice_router
+
 
 # ==========================================================
 # Models
@@ -78,8 +80,8 @@ app.include_router(ai_router)
 app.include_router(caregiver_router)
 app.include_router(medication_router)
 app.include_router(doctor_router)
-
 app.include_router(emergency_router)
+app.include_router(twilio_voice_router)
 # ==========================================================
 # Root Endpoint
 # ==========================================================

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import FamilyHeader from "./FamilyHeader";
 import FamilyOverview from "./FamilyOverview";
@@ -46,6 +46,47 @@ export default function FamilyDashboard() {
   );
   const [emergencyLoading, setEmergencyLoading] = useState(true);
 
+  const latestEmergencyAlertId = useRef<number | null>(null);
+
+  // ==========================================================
+  // UNLOCK EMERGENCY AUDIO (Chrome autoplay policy workaround)
+  // ==========================================================
+
+  useEffect(() => {
+    const unlockEmergencySound = () => {
+      const audio = new Audio("/sounds/emergency-alert.mp3");
+      audio.volume = 0;
+
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+
+          console.log(
+            "[EMERGENCY SOUND] Audio unlocked successfully."
+          );
+        })
+        .catch((error) => {
+          console.warn(
+            "[EMERGENCY SOUND] Audio unlock failed:",
+            error
+          );
+        });
+
+      window.removeEventListener("click", unlockEmergencySound);
+      window.removeEventListener("keydown", unlockEmergencySound);
+    };
+
+    window.addEventListener("click", unlockEmergencySound);
+    window.addEventListener("keydown", unlockEmergencySound);
+
+    return () => {
+      window.removeEventListener("click", unlockEmergencySound);
+      window.removeEventListener("keydown", unlockEmergencySound);
+    };
+  }, []);
+
   // ==========================================================
   // LOAD MEDICATIONS
   // ==========================================================
@@ -85,7 +126,39 @@ export default function FamilyDashboard() {
 
         console.log("FAMILY EMERGENCY ALERTS:", data);
 
-        setEmergencyAlerts(data || []);
+        const alerts = data || [];
+
+        if (alerts.length > 0) {
+          const newestAlert = alerts[0];
+
+          if (latestEmergencyAlertId.current === null) {
+            // First load: remember the latest existing alert.
+            // Do NOT play sound for old alerts.
+            latestEmergencyAlertId.current = newestAlert.id;
+          } else if (newestAlert.id !== latestEmergencyAlertId.current) {
+            // 🔊 NEW EMERGENCY ALERT DETECTED
+            latestEmergencyAlertId.current = newestAlert.id;
+
+            const audio = new Audio("/sounds/emergency-alert.mp3");
+            audio.volume = 1.0;
+
+            audio
+              .play()
+              .then(() => {
+                console.log(
+                  "[EMERGENCY SOUND] Custom alert sound played."
+                );
+              })
+              .catch((error) => {
+                console.error(
+                  "[EMERGENCY SOUND] Failed to play:",
+                  error
+                );
+              });
+          }
+        }
+
+        setEmergencyAlerts(alerts);
       } catch (error) {
         console.error(
           "FAILED TO LOAD FAMILY EMERGENCY ALERTS:",
