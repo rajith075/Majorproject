@@ -1,0 +1,231 @@
+import os
+
+
+class NotificationService:
+
+    # ==========================================================
+    # SMS
+    # ==========================================================
+
+    @staticmethod
+    def send_sms(
+        phone: str | None,
+        message: str,
+    ) -> bool:
+
+        if not phone:
+            print(
+                "[NOTIFICATION] SMS skipped - "
+                "recipient has no phone number."
+            )
+            return False
+
+        # ------------------------------------------------------
+        # Development Mode
+        # ------------------------------------------------------
+
+        mode = os.getenv(
+            "NOTIFICATION_MODE",
+            "mock",
+        ).lower()
+
+        if mode == "mock":
+
+            print("=" * 70)
+            print("MOCK SMS")
+            print("=" * 70)
+
+            print(
+                f"To      : {phone}"
+            )
+
+            print(
+                f"Message : {message}"
+            )
+
+            print("=" * 70)
+
+            return True
+
+        # ------------------------------------------------------
+        # Real SMS - Twilio
+        # ------------------------------------------------------
+
+        try:
+
+            from twilio.rest import Client
+
+            account_sid = os.getenv(
+                "TWILIO_ACCOUNT_SID"
+            )
+
+            auth_token = os.getenv(
+                "TWILIO_AUTH_TOKEN"
+            )
+
+            from_number = os.getenv(
+                "TWILIO_PHONE_NUMBER"
+            )
+
+            if not all(
+                [
+                    account_sid,
+                    auth_token,
+                    from_number,
+                ]
+            ):
+
+                print(
+                    "[NOTIFICATION] Twilio credentials "
+                    "are not configured."
+                )
+
+                return False
+
+            client = Client(
+                account_sid,
+                auth_token,
+            )
+
+            client.messages.create(
+                body=message,
+                from_=from_number,
+                to=phone,
+            )
+
+            print(
+                f"[NOTIFICATION] SMS sent to {phone}"
+            )
+
+            return True
+
+        except Exception as e:
+
+            print(
+                f"[NOTIFICATION] SMS failed: {e}"
+            )
+
+            return False
+
+    # ==========================================================
+    # PHONE CALL
+    # ==========================================================
+
+    @staticmethod
+    def make_call(
+        phone: str | None,
+        message: str,
+    ) -> bool:
+
+        if not phone:
+            print(
+                "[NOTIFICATION] Call skipped - "
+                "recipient has no phone number."
+            )
+            return False
+
+        # ------------------------------------------------------
+        # Development Mode
+        # ------------------------------------------------------
+
+        mode = os.getenv(
+            "NOTIFICATION_MODE",
+            "mock",
+        ).lower()
+
+        if mode == "mock":
+
+            print("=" * 70)
+            print("MOCK EMERGENCY CALL")
+            print("=" * 70)
+
+            print(
+                f"To      : {phone}"
+            )
+
+            print(
+                f"Message : {message}"
+            )
+
+            print("=" * 70)
+
+            return True
+
+        # ------------------------------------------------------
+        # Real Call - Twilio
+        # ------------------------------------------------------
+
+        try:
+
+            from twilio.rest import Client
+
+            account_sid = os.getenv(
+                "TWILIO_ACCOUNT_SID"
+            )
+
+            auth_token = os.getenv(
+                "TWILIO_AUTH_TOKEN"
+            )
+
+            from_number = os.getenv(
+                "TWILIO_PHONE_NUMBER"
+            )
+
+            if not all(
+                [
+                    account_sid,
+                    auth_token,
+                    from_number,
+                ]
+            ):
+
+                print(
+                    "[NOTIFICATION] Twilio credentials "
+                    "are not configured."
+                )
+
+                return False
+
+            client = Client(
+                account_sid,
+                auth_token,
+            )
+
+            safe_message = (
+                message
+                .replace("&", "and")
+                .replace("<", "")
+                .replace(">", "")
+            )
+
+            twiml = (
+                "<Response>"
+                "<Say>"
+                + safe_message
+                + "</Say>"
+                "</Response>"
+            )
+
+            client.calls.create(
+                twiml=twiml,
+                from_=from_number,
+                to=phone,
+            )
+
+            print(
+                f"[NOTIFICATION] Emergency call "
+                f"initiated to {phone}"
+            )
+
+            return True
+
+        except Exception as e:
+
+            print(
+                f"[NOTIFICATION] Call failed: {e}"
+            )
+
+            return False
+
+
+notification_service = NotificationService()

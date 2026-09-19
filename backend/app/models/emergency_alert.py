@@ -1,14 +1,12 @@
 from sqlalchemy import (
+    Boolean,
     Column,
-    Integer,
-    String,
-    Float,
     DateTime,
     ForeignKey,
+    Integer,
+    String,
     Text,
-    Boolean,
 )
-
 from sqlalchemy.sql import func
 
 from app.db.database import Base
@@ -18,19 +16,11 @@ class EmergencyAlert(Base):
 
     __tablename__ = "emergency_alerts"
 
-    # ======================================================
-    # Primary Key
-    # ======================================================
-
     id = Column(
         Integer,
         primary_key=True,
         index=True,
     )
-
-    # ======================================================
-    # Patient
-    # ======================================================
 
     patient_id = Column(
         Integer,
@@ -39,50 +29,31 @@ class EmergencyAlert(Base):
         index=True,
     )
 
-    # ======================================================
-    # Emergency Event
-    # ======================================================
-
     event_type = Column(
-        String(50),
+        String,
         nullable=False,
-        default="FALL",
     )
 
     status = Column(
-        String(50),
+        String,
         nullable=False,
-        default="DETECTED",
+        default="ACTIVE",
         index=True,
     )
 
-    # ======================================================
-    # GPS LOCATION
-    # ======================================================
-
     latitude = Column(
-        Float,
         nullable=True,
     )
 
     longitude = Column(
-        Float,
         nullable=True,
     )
-
-    # ======================================================
-    # Detection Time
-    # ======================================================
 
     detected_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
-
-    # ======================================================
-    # Human Confirmation
-    # ======================================================
 
     patient_confirmation = Column(
         Boolean,
@@ -94,12 +65,8 @@ class EmergencyAlert(Base):
         nullable=True,
     )
 
-    # ======================================================
-    # Final Resolution
-    # ======================================================
-
     resolution = Column(
-        String(50),
+        String,
         nullable=True,
     )
 
@@ -108,11 +75,14 @@ class EmergencyAlert(Base):
         nullable=True,
     )
 
-    # ======================================================
-    # Additional Notes
-    # ======================================================
-
     notes = Column(
         Text,
         nullable=True,
+    )
+
+    vital_log_id = Column(
+        Integer,
+        ForeignKey("vital_logs.id"),
+        nullable=True,
+        index=True,
     )

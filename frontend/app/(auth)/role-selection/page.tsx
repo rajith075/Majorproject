@@ -19,37 +19,37 @@ export default function RoleSelectionPage() {
     {
       title: "Family Member",
       description:
-        "Manage your loved one's health, care, medications and emergency information.",
+        "Coordinate your loved one's care in one place — health records, medications, and emergency information.",
       icon: Users,
-      points: ["Full care profile", "Medication tracking", "Emergency contacts"],
+      points: ["Complete care profile", "Medication tracking", "Emergency contacts"],
 
       action: () => {
         router.push("/register");
       },
 
-      badge: "Available Now",
+      badge: "Available now",
       active: true,
     },
 
     {
       title: "Caregiver",
       description:
-        "Monitor assigned elderly patients and access their complete care dashboard.",
+        "View your assigned patients on one dashboard and stay on top of visits, tasks, and alerts.",
       icon: HeartPulse,
-      points: ["Live patient dashboard", "Task & visit logs", "Instant alerts"],
+      points: ["Real-time patient dashboard", "Visit and task logs", "Instant alerts"],
 
       action: () => {
         router.push("/caregiver-login");
       },
 
-      badge: "Available Now",
+      badge: "Available now",
       active: true,
     },
 
     {
       title: "Doctor",
       description:
-        "Review patient health information, clinical insights and AI-assisted monitoring.",
+        "Review patient records, clinical insights, and AI-assisted monitoring to inform every decision.",
       icon: Stethoscope,
       points: ["Clinical insights", "AI-assisted monitoring", "Chart review"],
 
@@ -57,7 +57,7 @@ export default function RoleSelectionPage() {
         router.push("/doctor-register");
       },
 
-      badge: "Available Now",
+      badge: "Available now",
       active: true,
     },
   ];
@@ -115,10 +115,10 @@ export default function RoleSelectionPage() {
 
             <div>
               <h1 className="text-lg font-bold tracking-tight text-slate-900">
-                Elderly Care AI
+                Elder Care AI
               </h1>
               <p className="text-xs font-medium tracking-wide text-slate-500">
-                Intelligent care. Better living.
+                Thoughtful care, backed by intelligence.
               </p>
             </div>
           </div>
@@ -134,7 +134,7 @@ export default function RoleSelectionPage() {
             "
           >
             <ShieldCheck className="h-4 w-4 text-violet-600" />
-            Secure Healthcare Platform
+            A secure healthcare platform
           </div>
         </header>
 
@@ -161,7 +161,7 @@ export default function RoleSelectionPage() {
                 "
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                Welcome to Elderly Care AI
+                Welcome to Elder Care AI
               </div>
 
               <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-slate-900 sm:text-5xl">
@@ -181,8 +181,7 @@ export default function RoleSelectionPage() {
               </h2>
 
               <p className="mx-auto mt-5 max-w-lg text-base leading-7 text-slate-600 sm:text-lg">
-                Choose your role to access the experience designed
-                specifically for you.
+                Select your role below, and we'll take you to the experience built for you.
               </p>
             </div>
 
@@ -359,7 +358,7 @@ export default function RoleSelectionPage() {
                           ${role.active ? "text-violet-600" : "text-slate-400"}
                         `}
                       >
-                        {role.active ? `Continue as ${role.title}` : "Available soon"}
+                        {role.active ? `Continue as ${role.title}` : "Coming soon"}
                       </span>
 
                       {role.active ? (
@@ -395,7 +394,7 @@ export default function RoleSelectionPage() {
             <div className="mt-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row sm:gap-8">
               <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
                 <ShieldCheck className="h-4 w-4 text-violet-400" />
-                
+                HIPAA-compliant data handling
               </div>
               <div className="hidden h-3 w-px bg-slate-300 sm:block" />
               <div className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">

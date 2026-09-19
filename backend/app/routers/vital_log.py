@@ -16,6 +16,7 @@ from app.services.vital_log_service import (
     vital_log_service,
 )
 
+
 router = APIRouter(
     prefix="/vitals",
     tags=["Vital Logs"],
@@ -53,6 +54,59 @@ def get_my_latest_vitals(
     return vital_log_service.get_latest_vitals(
         db=db,
         patient_id=patient.id,
+    )
+
+
+# ==========================================================
+# DOCTOR
+# Get complete vital history for assigned patient
+# ==========================================================
+
+@router.get(
+    "/doctor/patient/{patient_id}/history",
+)
+def get_doctor_vital_history(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    # ------------------------------------------------------
+    # Doctor access only
+    # ------------------------------------------------------
+
+    if current_user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Doctor access required.",
+        )
+
+    # ------------------------------------------------------
+    # Verify patient belongs to this doctor
+    # ------------------------------------------------------
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.id == patient_id,
+            Patient.doctor_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient is not assigned to this doctor.",
+        )
+
+    # ------------------------------------------------------
+    # Return complete vital history
+    # ------------------------------------------------------
+
+    return vital_log_service.get_vital_history(
+        db=db,
+        patient_id=patient_id,
     )
 
 

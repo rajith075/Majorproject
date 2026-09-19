@@ -240,3 +240,69 @@ def create_medication(
         evening=request.evening,
         night=request.night,
     )
+# ==========================================================
+# Get Patient Medication History
+# Doctor → assigned patient only
+# Includes current + previous medications
+# ==========================================================
+
+@router.get(
+    "/doctor/patient/{patient_id}",
+    response_model=list[MedicationResponse],
+)
+def get_doctor_patient_medications(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # ------------------------------------------------------
+    # Only doctors can access medication history
+    # ------------------------------------------------------
+
+    if current_user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Only doctors can access patient medication history.",
+        )
+
+    # ------------------------------------------------------
+    # Verify patient exists and is assigned to this doctor
+    # ------------------------------------------------------
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.id == patient_id,
+            Patient.doctor_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient is not assigned to this doctor.",
+        )
+
+    # ------------------------------------------------------
+    # Return ALL medications
+    #
+    # active=True  → Current medication
+    # active=False → Previous medication
+    #
+    # We intentionally keep previous records.
+    # ------------------------------------------------------
+
+    medications = (
+        db.query(Medication)
+        .filter(
+            Medication.patient_id == patient_id,
+        )
+        .order_by(
+            Medication.active.desc(),
+            Medication.id.desc(),
+        )
+        .all()
+    )
+
+    return medications

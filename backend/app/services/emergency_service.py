@@ -7,39 +7,56 @@ from app.models.emergency_alert import EmergencyAlert
 
 class EmergencyService:
 
-    # ======================================================
-    # Create Emergency Alert
-    # ======================================================
+    # ==========================================================
+    # CREATE ALERT
+    # ==========================================================
 
+    @staticmethod
     def create_alert(
-        self,
         db: Session,
         patient_id: int,
-        event_type: str = "FALL",
-        latitude: float | None = None,
-        longitude: float | None = None,
+        event_type: str,
+        latitude=None,
+        longitude=None,
     ):
 
         alert = EmergencyAlert(
+
             patient_id=patient_id,
+
             event_type=event_type,
-            status="DETECTED",
+
+            status="ACTIVE",
+
             latitude=latitude,
+
             longitude=longitude,
+
+            patient_confirmation=None,
+
+            caregiver_confirmation=None,
+
+            resolution=None,
+
+            resolved_at=None,
+
+            notes=None,
         )
 
         db.add(alert)
+
         db.commit()
+
         db.refresh(alert)
 
         return alert
 
-    # ======================================================
-    # Get Single Alert
-    # ======================================================
+    # ==========================================================
+    # GET SINGLE ALERT
+    # ==========================================================
 
+    @staticmethod
     def get_alert(
-        self,
         db: Session,
         alert_id: int,
     ):
@@ -47,17 +64,17 @@ class EmergencyService:
         return (
             db.query(EmergencyAlert)
             .filter(
-                EmergencyAlert.id == alert_id
+                EmergencyAlert.id == alert_id,
             )
             .first()
         )
 
-    # ======================================================
-    # Get Patient Alerts
-    # ======================================================
+    # ==========================================================
+    # GET PATIENT ALERT HISTORY
+    # ==========================================================
 
+    @staticmethod
     def get_patient_alerts(
-        self,
         db: Session,
         patient_id: int,
     ):
@@ -65,7 +82,7 @@ class EmergencyService:
         return (
             db.query(EmergencyAlert)
             .filter(
-                EmergencyAlert.patient_id == patient_id
+                EmergencyAlert.patient_id == patient_id,
             )
             .order_by(
                 EmergencyAlert.detected_at.desc()
@@ -73,20 +90,23 @@ class EmergencyService:
             .all()
         )
 
-    # ======================================================
-    # Patient Confirmation
-    # ======================================================
+    # ==========================================================
+    # PATIENT CONFIRMATION
+    # ==========================================================
 
+    @staticmethod
     def confirm_by_patient(
-        self,
         db: Session,
         alert_id: int,
         is_safe: bool,
     ):
 
-        alert = self.get_alert(
-            db,
-            alert_id,
+        alert = (
+            db.query(EmergencyAlert)
+            .filter(
+                EmergencyAlert.id == alert_id,
+            )
+            .first()
         )
 
         if not alert:
@@ -95,33 +115,40 @@ class EmergencyService:
         alert.patient_confirmation = is_safe
 
         if is_safe:
-            alert.status = "RESOLVED"
-            alert.resolution = "PATIENT_SAFE"
-            alert.resolved_at = datetime.now(timezone.utc)
 
-        else:
-            alert.status = "SOS_PENDING"
-            alert.resolution = "EMERGENCY"
+            alert.status = "RESOLVED"
+
+            alert.resolution = (
+                "Patient confirmed safe."
+            )
+
+            alert.resolved_at = datetime.now(
+                timezone.utc
+            )
 
         db.commit()
+
         db.refresh(alert)
 
         return alert
 
-    # ======================================================
-    # Caregiver Confirmation
-    # ======================================================
+    # ==========================================================
+    # CAREGIVER CONFIRMATION
+    # ==========================================================
 
+    @staticmethod
     def confirm_by_caregiver(
-        self,
         db: Session,
         alert_id: int,
         is_safe: bool,
     ):
 
-        alert = self.get_alert(
-            db,
-            alert_id,
+        alert = (
+            db.query(EmergencyAlert)
+            .filter(
+                EmergencyAlert.id == alert_id,
+            )
+            .first()
         )
 
         if not alert:
@@ -130,22 +157,22 @@ class EmergencyService:
         alert.caregiver_confirmation = is_safe
 
         if is_safe:
-            alert.status = "RESOLVED"
-            alert.resolution = "CAREGIVER_CONFIRMED_SAFE"
-            alert.resolved_at = datetime.now(timezone.utc)
 
-        else:
-            alert.status = "SOS_PENDING"
-            alert.resolution = "EMERGENCY"
+            alert.status = "RESOLVED"
+
+            alert.resolution = (
+                "Caregiver confirmed safe."
+            )
+
+            alert.resolved_at = datetime.now(
+                timezone.utc
+            )
 
         db.commit()
+
         db.refresh(alert)
 
         return alert
 
-
-# ==========================================================
-# Singleton
-# ==========================================================
 
 emergency_service = EmergencyService()

@@ -1,32 +1,44 @@
 import API from "./axios";
 
-export const getMyMedications = async () => {
+// =====================================================
+// MEDICATION TYPES
+// =====================================================
+
+export interface Medication {
+  id: number;
+  patient_id: number;
+
+  medicine_name: string;
+  dosage?: string | null;
+  reminder_time?: string | null;
+
+  before_food: boolean;
+
+  morning: boolean;
+  afternoon: boolean;
+  evening: boolean;
+  night: boolean;
+
+  active: boolean;
+
+  // Medication tracking
+  status?: "taken" | "pending" | "upcoming";
+  given_by?: string | null;
+  given_at?: string | null;
+}
+
+// =====================================================
+// GET MY MEDICATIONS
+// Family member → medications of their patient
+// =====================================================
+
+export const getMyMedications = async (): Promise<Medication[]> => {
   const response = await API.get("/medications/me");
 
-  console.log("FAMILY MEDICATIONS:", response.data);
-
-  return response.data;
-};
-
-export const getCaregiverMedications = async () => {
-  const response = await API.get("/medications/caregiver");
-
-  console.log("CAREGIVER MEDICATIONS:", response.data);
-
-  return response.data;
-};
-
-export const markMedicationAsGiven = async (
-  medicationId: number
-) => {
-  const response = await API.post(
-    `/medications/${medicationId}/given`
-  );
-
   console.log(
-    "MEDICATION MARKED AS GIVEN:",
-    response.data
+    "💊 FAMILY MEDICATIONS:",
+    JSON.stringify(response.data, null, 2)
   );
 
-  return response.data;
+  return response.data || [];
 };

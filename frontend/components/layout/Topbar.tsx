@@ -1,8 +1,30 @@
 "use client";
 
 import { Bell, CalendarDays, Search } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 
 export default function Topbar() {
+  const user = useAuthStore((state) => state.user);
+
+  const fullName = user?.full_name || "User";
+
+  const initials = fullName
+    .split(" ")
+    .filter(Boolean)
+    .map((name) => name[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const roleLabel =
+    user?.role === "family"
+      ? "Family Member"
+      : user?.role === "caregiver"
+      ? "Caregiver"
+      : user?.role === "doctor"
+      ? "Doctor"
+      : "User";
+
   return (
     <header className="flex h-20 items-center justify-between border-b border-slate-200 bg-white px-8">
 
@@ -18,7 +40,14 @@ export default function Topbar() {
 
           <CalendarDays size={15} />
 
-          <span>Monday, 27 July 2026</span>
+          <span>
+            {new Date().toLocaleDateString("en-IN", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </span>
 
         </div>
 
@@ -52,38 +81,38 @@ export default function Topbar() {
 
         </button>
 
-        {/* Avatar */}
+        {/* User Profile */}
 
         <button className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:shadow-md">
 
-         <div
-  className="
-    flex
-    h-12
-    w-12
-    items-center
-    justify-center
-    rounded-full
-    bg-gradient-to-br
-    from-violet-500
-    to-purple-600
-    text-white
-    font-bold
-    shadow-md
-    shadow-violet-500/20
-  "
->
-  RS
-</div>
+          <div
+            className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-full
+              bg-gradient-to-br
+              from-violet-500
+              to-purple-600
+              text-white
+              font-bold
+              shadow-md
+              shadow-violet-500/20
+            "
+          >
+            {initials}
+          </div>
 
           <div className="text-left">
 
             <p className="text-sm font-semibold text-slate-900">
-              Rajith
+              {fullName}
             </p>
 
             <p className="text-xs text-slate-500">
-              Caregiver
+              {roleLabel}
             </p>
 
           </div>

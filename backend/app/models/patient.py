@@ -22,15 +22,16 @@ class Patient(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # Patient registration timestamp
-    # Used to identify the most recently registered patient
     created_at = Column(
         DateTime,
         nullable=False,
         default=datetime.utcnow,
     )
 
+    # ==========================================================
     # Family member / patient owner
+    # ==========================================================
+
     user_id = Column(
         Integer,
         ForeignKey("users.id"),
@@ -41,8 +42,19 @@ class Patient(Base):
     # Caregiver Assignment
     # ==========================================================
 
-    # Actual User ID of the selected virtual caregiver
     caregiver_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+
+    # ==========================================================
+    # Doctor Assignment
+    # ==========================================================
+
+    # Actual User ID of the assigned doctor
+    doctor_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=True,

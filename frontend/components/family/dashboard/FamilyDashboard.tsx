@@ -6,9 +6,15 @@ import FamilyHeader from "./FamilyHeader";
 import FamilyOverview from "./FamilyOverview";
 import FamilyAIInsight from "./FamilyAIInsight";
 import FamilyVitals from "./FamilyVitals";
+import FamilyDoctors from "./FamilyDoctors";
 
 import { usePatientStore } from "@/store/patient-store";
 import { getMyMedications } from "@/services/api/medication";
+
+import {
+  getPatientEmergencyAlerts,
+  EmergencyAlert,
+} from "@/services/api/emergency";
 
 interface Medication {
   id: number;
@@ -35,6 +41,15 @@ export default function FamilyDashboard() {
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationLoading, setMedicationLoading] = useState(true);
 
+  const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlert[]>(
+    []
+  );
+  const [emergencyLoading, setEmergencyLoading] = useState(true);
+
+  // ==========================================================
+  // LOAD MEDICATIONS
+  // ==========================================================
+
   useEffect(() => {
     const loadMedications = async () => {
       try {
@@ -54,10 +69,50 @@ export default function FamilyDashboard() {
     loadMedications();
   }, []);
 
+  // ==========================================================
+  // LOAD EMERGENCY ALERTS
+  // ==========================================================
+
+  useEffect(() => {
+    const loadEmergencyAlerts = async () => {
+      if (!patient?.id) {
+        setEmergencyLoading(false);
+        return;
+      }
+
+      try {
+        const data = await getPatientEmergencyAlerts(patient.id);
+
+        console.log("FAMILY EMERGENCY ALERTS:", data);
+
+        setEmergencyAlerts(data || []);
+      } catch (error) {
+        console.error(
+          "FAILED TO LOAD FAMILY EMERGENCY ALERTS:",
+          error
+        );
+
+        setEmergencyAlerts([]);
+      } finally {
+        setEmergencyLoading(false);
+      }
+    };
+
+    loadEmergencyAlerts();
+
+    // Refresh emergency alerts every 3 seconds
+    // so newly generated AI emergencies appear automatically.
+    const interval = setInterval(() => {
+      loadEmergencyAlerts();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [patient?.id]);
+
   return (
     <div className="space-y-10 scroll-smooth">
 
-      {/* Overview */}
+      {/* ================= OVERVIEW ================= */}
       <section id="overview" className="scroll-mt-8">
         <FamilyHeader />
 
@@ -66,17 +121,17 @@ export default function FamilyDashboard() {
         </div>
       </section>
 
-      {/* AI Insight */}
+      {/* ================= AI INSIGHT ================= */}
       <section id="ai-insight" className="scroll-mt-8">
         <FamilyAIInsight />
       </section>
 
-      {/* Current Health */}
+      {/* ================= CURRENT HEALTH ================= */}
       <section id="health" className="scroll-mt-8">
         <FamilyVitals />
       </section>
 
-      {/* Medication */}
+      {/* ================= MEDICATION ================= */}
       <section id="medication" className="scroll-mt-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
@@ -225,10 +280,11 @@ export default function FamilyDashboard() {
         </div>
       </section>
 
-      {/* Alerts */}
+      {/* ================= ALERTS ================= */}
       <section id="alerts" className="scroll-mt-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
+          {/* Header */}
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-red-50 p-3">
               <span className="text-xl">🚨</span>
@@ -245,20 +301,126 @@ export default function FamilyDashboard() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-            <p className="text-sm font-semibold text-emerald-700">
-              No active alerts
-            </p>
+          {/* Loading */}
+          {emergencyLoading ? (
+            <div className="mt-6 rounded-2xl bg-slate-50 p-5">
+              <p className="text-sm text-slate-500">
+                Loading alerts...
+              </p>
+            </div>
+          ) : (
+            (() => {
+              const activeAlerts = emergencyAlerts.filter(
+                (alert) => alert.status !== "RESOLVED"
+              );
 
-            <p className="mt-1 text-sm text-emerald-600">
-              Everything looks stable at the moment.
-            </p>
-          </div>
+              if (activeAlerts.length === 0) {
+                return (
+                  <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                    <p className="text-sm font-semibold text-emerald-700">
+                      No active alerts
+                    </p>
+
+                    <p className="mt-1 text-sm text-emerald-600">
+                      Everything looks stable at the moment.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="mt-6 space-y-4">
+                  {activeAlerts.slice(0, 5).map((alert) => {
+
+                    const isCritical =
+                      alert.status === "CRITICAL";
+
+                    return (
+                      <div
+                        key={alert.id}
+                        className={`rounded-2xl border p-5 ${
+                          isCritical
+                            ? "border-red-200 bg-red-50"
+                            : "border-amber-200 bg-amber-50"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+
+                          {/* Alert Details */}
+                          <div className="flex items-start gap-3">
+
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                                isCritical
+                                  ? "bg-red-100"
+                                  : "bg-amber-100"
+                              }`}
+                            >
+                              <span className="text-xl">
+                                {isCritical ? "🚨" : "⚠️"}
+                              </span>
+                            </div>
+
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+
+                                <h3 className="text-base font-bold text-slate-900">
+                                  {alert.event_type}
+                                </h3>
+
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                    isCritical
+                                      ? "bg-red-600 text-white"
+                                      : "bg-amber-500 text-white"
+                                  }`}
+                                >
+                                  {isCritical
+                                    ? "CRITICAL"
+                                    : "WARNING"}
+                                </span>
+
+                              </div>
+
+                              {alert.notes && (
+                                <p className="mt-2 text-sm text-slate-600">
+                                  {alert.notes.split(" | SMS=")[0]}
+                                </p>
+                              )}
+
+                              <p className="mt-2 text-xs text-slate-400">
+                                Detected{" "}
+                                {new Date(
+                                  alert.detected_at
+                                ).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Emergency ID */}
+                          <div className="shrink-0 rounded-xl bg-white/70 px-4 py-3">
+                            <p className="text-xs font-medium text-slate-400">
+                              Emergency ID
+                            </p>
+
+                            <p className="mt-1 text-sm font-bold text-slate-700">
+                              #{alert.id}
+                            </p>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
+          )}
 
         </div>
       </section>
 
-      {/* Patient */}
+      {/* ================= PATIENT ================= */}
       <section id="patient" className="scroll-mt-8">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
 
@@ -299,14 +461,6 @@ export default function FamilyDashboard() {
               />
 
               <PatientInfo
-                label="Doctor"
-                value={
-                  patient.assigned_doctor ||
-                  "Not assigned"
-                }
-              />
-
-              <PatientInfo
                 label="Caregiver"
                 value={
                   patient.assigned_caregiver ||
@@ -319,6 +473,9 @@ export default function FamilyDashboard() {
 
         </div>
       </section>
+
+      {/* ================= DOCTORS ================= */}
+      <FamilyDoctors />
 
     </div>
   );
