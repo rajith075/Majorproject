@@ -66,16 +66,20 @@ export default function FamilyDashboard() {
           console.log(
             "[EMERGENCY SOUND] Audio unlocked successfully."
           );
+
+          // Remove listeners ONLY after successful unlock
+          window.removeEventListener("click", unlockEmergencySound);
+          window.removeEventListener("keydown", unlockEmergencySound);
         })
         .catch((error) => {
           console.warn(
             "[EMERGENCY SOUND] Audio unlock failed:",
             error
           );
-        });
 
-      window.removeEventListener("click", unlockEmergencySound);
-      window.removeEventListener("keydown", unlockEmergencySound);
+          // Keep listeners active so another user interaction
+          // can try again.
+        });
     };
 
     window.addEventListener("click", unlockEmergencySound);
