@@ -7,12 +7,9 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   HeartPulse,
-  Users,
   BrainCircuit,
   Pill,
-  FileText,
   Bell,
-  Settings,
   UserRound,
 } from "lucide-react";
 
@@ -54,6 +51,14 @@ const familyNavigation = [
   },
 ];
 
+const doctorNavigation = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
@@ -61,6 +66,7 @@ export default function Sidebar() {
   const [activeSection, setActiveSection] = useState("overview");
 
   const isFamily = user?.role === "family";
+  const isDoctor = user?.role === "doctor";
 
   useEffect(() => {
     if (!isFamily) return;
@@ -81,7 +87,9 @@ export default function Sidebar() {
           );
 
         if (visibleSections.length > 0) {
-          setActiveSection(visibleSections[0].target.id);
+          setActiveSection(
+            visibleSections[0].target.id
+          );
         }
       },
       {
@@ -91,7 +99,9 @@ export default function Sidebar() {
       }
     );
 
-    sections.forEach((section) => observer.observe(section));
+    sections.forEach((section) =>
+      observer.observe(section)
+    );
 
     return () => {
       observer.disconnect();
@@ -171,10 +181,14 @@ export default function Sidebar() {
       {/* Navigation */}
 
       {isFamily ? (
+        /* =========================
+           FAMILY NAVIGATION
+        ========================= */
         <nav className="relative flex-1 space-y-2 p-5">
           {familyNavigation.map((item) => {
             const Icon = item.icon;
-            const active = activeSection === item.section;
+            const active =
+              activeSection === item.section;
 
             return (
               <button
@@ -226,10 +240,17 @@ export default function Sidebar() {
           })}
         </nav>
       ) : (
+        /* =========================
+           DOCTOR / CAREGIVER NAVIGATION
+        ========================= */
         <nav className="relative flex-1 space-y-2 p-5">
-          {navigation.map((item) => {
+          {(isDoctor
+            ? doctorNavigation
+            : navigation
+          ).map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active =
+              pathname === item.href;
 
             return (
               <Link
