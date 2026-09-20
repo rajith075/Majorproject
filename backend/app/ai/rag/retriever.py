@@ -30,13 +30,15 @@ class Retriever:
         # --------------------------------------------------
         # Maximum acceptable FAISS distance
         #
-        # Lower distance = more relevant.
+        # Based on the current FAISS results, the previous
+        # value of 0.75 was rejecting the nearest results.
         #
-        # This is an initial threshold based on the
-        # current embedding model and knowledge base.
+        # Current nearest result observed:
+        # 0.8616
+        #
         # --------------------------------------------------
 
-        self.default_max_distance = 0.75
+        self.default_max_distance = 1.0
 
     # ======================================================
     # Retrieve Relevant Medical Knowledge
@@ -55,6 +57,11 @@ class Retriever:
         # --------------------------------------------------
 
         if not query or not query.strip():
+
+            print(
+                "[RAG DEBUG] Empty query received."
+            )
+
             return []
 
         # --------------------------------------------------
@@ -62,6 +69,12 @@ class Retriever:
         # --------------------------------------------------
 
         if top_k <= 0:
+
+            print(
+                "[RAG DEBUG] Invalid top_k:",
+                top_k,
+            )
+
             return []
 
         # --------------------------------------------------
@@ -69,7 +82,10 @@ class Retriever:
         # --------------------------------------------------
 
         if max_distance is None:
-            max_distance = self.default_max_distance
+
+            max_distance = (
+                self.default_max_distance
+            )
 
         # --------------------------------------------------
         # Normalize Category
@@ -78,10 +94,35 @@ class Retriever:
         if category:
 
             category = (
-                category
+                str(category)
                 .strip()
                 .lower()
             )
+
+        # ==================================================
+        # DEBUG - Retrieval Request
+        # ==================================================
+
+        print("=" * 70)
+        print("[RAG DEBUG] RETRIEVAL STARTED")
+        print("-" * 70)
+        print(
+            "[RAG DEBUG] Query:",
+            query,
+        )
+        print(
+            "[RAG DEBUG] Requested Category:",
+            category,
+        )
+        print(
+            "[RAG DEBUG] Top K:",
+            top_k,
+        )
+        print(
+            "[RAG DEBUG] Maximum Distance:",
+            max_distance,
+        )
+        print("=" * 70)
 
         # --------------------------------------------------
         # Convert Query into Embedding
@@ -93,6 +134,23 @@ class Retriever:
             )
         )
 
+        # ==================================================
+        # DEBUG - Embedding
+        # ==================================================
+
+        try:
+
+            print(
+                "[RAG DEBUG] Query embedding dimension:",
+                query_embedding.shape[0],
+            )
+
+        except Exception:
+
+            print(
+                "[RAG DEBUG] Query embedding generated."
+            )
+
         # --------------------------------------------------
         # Search Extra Results
         #
@@ -102,16 +160,6 @@ class Retriever:
         # 1. Distance filtering
         # 2. Category filtering
         #
-        # IMPORTANT:
-        #
-        # We DO NOT access something like:
-        #
-        # self.vector_store.total_vectors
-        #
-        # because VectorStore does not have that property.
-        #
-        # VectorStore.search() already safely limits the
-        # requested number using self.index.ntotal.
         # --------------------------------------------------
 
         search_k = max(
@@ -123,6 +171,62 @@ class Retriever:
             query_embedding,
             top_k=search_k,
         )
+
+        # ==================================================
+        # DEBUG - Raw FAISS Results
+        # ==================================================
+
+        print("=" * 70)
+        print(
+            "[RAG DEBUG] RAW FAISS RESULTS:",
+            len(results),
+        )
+        print("-" * 70)
+
+        if not results:
+
+            print(
+                "[RAG DEBUG] FAISS returned NO results."
+            )
+
+        else:
+
+            for index, result in enumerate(
+                results[:10],
+                start=1,
+            ):
+
+                distance = result.get(
+                    "distance",
+                    float("inf"),
+                )
+
+                result_category = (
+                    result.get(
+                        "category",
+                        "",
+                    )
+                )
+
+                source = result.get(
+                    "source",
+                    "",
+                )
+
+                chunk_id = result.get(
+                    "chunk_id",
+                    "",
+                )
+
+                print(
+                    f"{index}. "
+                    f"distance={float(distance):.4f} | "
+                    f"category={result_category} | "
+                    f"source={source} | "
+                    f"chunk={chunk_id}"
+                )
+
+        print("=" * 70)
 
         # --------------------------------------------------
         # Distance Filtering
@@ -141,21 +245,39 @@ class Retriever:
 
         ]
 
+        # ==================================================
+        # DEBUG - After Distance Filtering
+        # ==================================================
+
+        print(
+            "[RAG DEBUG] RESULTS AFTER DISTANCE FILTER:",
+            len(relevant_results),
+        )
+
+        for result in relevant_results:
+
+            print(
+                "  "
+                f"distance={float(result.get('distance', 0)):.4f} | "
+                f"category={result.get('category', '')} | "
+                f"source={result.get('source', '')}"
+            )
+
         # --------------------------------------------------
         # Category Filtering
         # --------------------------------------------------
         #
-        # Example:
+        # Exact category matching is intentionally preserved
+        # for now. The debug output will tell us if this is
+        # the stage removing the medical knowledge.
         #
-        # category="diabetes"
-        #
-        # Only diabetes knowledge will be returned.
-        #
-        # This prevents unrelated medical conditions from
-        # being passed to Gemini as grounding knowledge.
         # --------------------------------------------------
 
         if category:
+
+            before_category_count = len(
+                relevant_results
+            )
 
             relevant_results = [
 
@@ -178,6 +300,59 @@ class Retriever:
 
             ]
 
+            # ==================================================
+            # DEBUG - Category Filtering
+            # ==================================================
+
+            print("=" * 70)
+            print(
+                "[RAG DEBUG] CATEGORY FILTER"
+            )
+            print(
+                "[RAG DEBUG] Requested category:",
+                category,
+            )
+            print(
+                "[RAG DEBUG] Before category filter:",
+                before_category_count,
+            )
+            print(
+                "[RAG DEBUG] After category filter:",
+                len(relevant_results),
+            )
+
+            if before_category_count > 0:
+
+                print(
+                    "[RAG DEBUG] Available categories "
+                    "before filtering:"
+                )
+
+                available_categories = sorted(
+                    set(
+                        str(
+                            result.get(
+                                "category",
+                                "",
+                            )
+                        )
+                        .strip()
+                        .lower()
+                        for result
+                        in results
+                    )
+                )
+
+                for available_category in (
+                    available_categories
+                ):
+
+                    print(
+                        f"  - {available_category}"
+                    )
+
+            print("=" * 70)
+
         # --------------------------------------------------
         # Sort by Relevance
         #
@@ -194,6 +369,40 @@ class Retriever:
                 )
 
         )
+
+        # ==================================================
+        # DEBUG - Final Retrieval Results
+        # ==================================================
+
+        print("=" * 70)
+        print(
+            "[RAG DEBUG] FINAL RESULTS:",
+            len(relevant_results),
+        )
+
+        if not relevant_results:
+
+            print(
+                "[RAG DEBUG] ❌ NO MEDICAL KNOWLEDGE "
+                "SURVIVED RETRIEVAL FILTERS."
+            )
+
+        else:
+
+            for index, result in enumerate(
+                relevant_results[:top_k],
+                start=1,
+            ):
+
+                print(
+                    f"{index}. "
+                    f"distance={float(result.get('distance', 0)):.4f} | "
+                    f"category={result.get('category', '')} | "
+                    f"source={result.get('source', '')} | "
+                    f"chunk={result.get('chunk_id', '')}"
+                )
+
+        print("=" * 70)
 
         # --------------------------------------------------
         # Return Top-K
@@ -230,6 +439,7 @@ class Retriever:
         # --------------------------------------------------
 
         if not results:
+
             return ""
 
         # --------------------------------------------------

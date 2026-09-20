@@ -12,24 +12,28 @@ import {
 export const navigation = [
   {
     title: "Dashboard",
-    href: "/",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
+
   {
     title: "Health",
     href: "/health",
     icon: HeartPulse,
   },
-    {
+
+  {
     title: "Medication",
     href: "/medication",
     icon: Pill,
   },
+
   {
     title: "Patients",
     href: "/patients",
     icon: Users,
   },
+
   {
     title: "AI Insights",
     href: "/ai",
@@ -41,11 +45,13 @@ export const navigation = [
     href: "/reports",
     icon: FileText,
   },
+
   {
     title: "Alerts",
     href: "/alerts",
     icon: Bell,
   },
+
   {
     title: "Settings",
     href: "/settings",

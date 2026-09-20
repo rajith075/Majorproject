@@ -30,7 +30,7 @@ interface Medication {
   active: boolean;
 
   // Real medication tracking fields
-  status: "taken" | "pending" | "upcoming";
+  status?: "taken" | "pending" | "upcoming";
   given_by?: string | null;
   given_at?: string | null;
 }
@@ -553,6 +553,21 @@ export default function FamilyDashboard() {
 
       {/* ================= DOCTORS ================= */}
       <FamilyDoctors />
+
+      {/* ================= DOCTOR NOTES ================= */}
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold text-slate-900">
+          Doctor Notes
+        </h2>
+
+        <p className="mt-1 text-sm text-slate-500">
+          Notes shared by the assigned doctor.
+        </p>
+
+        <p className="mt-5 whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+          {patient?.notes || "No notes have been shared by the doctor yet."}
+        </p>
+      </section>
 
     </div>
   );

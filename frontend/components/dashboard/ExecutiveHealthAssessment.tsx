@@ -32,7 +32,7 @@ interface Prediction {
   health_confidence: number;
 
   clinical_event?: string;
-  clinical_confidence: number;
+  clinical_confidence?: number;
 
   alert_level: string;
   alert_message: string;
@@ -48,10 +48,12 @@ interface Prediction {
 
 interface ExecutiveHealthAssessmentProps {
   prediction: Prediction | null;
+  showRecommendations?: boolean;
 }
 
 export default function ExecutiveHealthAssessment({
   prediction,
+  showRecommendations = true,
 }: ExecutiveHealthAssessmentProps) {
   /* =====================================================
      NO PREDICTION STATE
@@ -98,7 +100,7 @@ export default function ExecutiveHealthAssessment({
 
   const aiConfidence =
     (prediction.health_confidence +
-      prediction.clinical_confidence) /
+      (prediction.clinical_confidence ?? 0)) /
     2;
 
   /* =====================================================
@@ -202,7 +204,11 @@ export default function ExecutiveHealthAssessment({
           KEY FINDINGS + RECOMMENDATIONS
           ================================================= */}
 
-      <div className="grid gap-10 border-t border-slate-100 px-8 py-8 lg:grid-cols-2">
+      <div
+        className={`grid gap-10 border-t border-slate-100 px-8 py-8 ${
+          showRecommendations ? "lg:grid-cols-2" : "lg:grid-cols-1"
+        }`}
+      >
 
         {/* =================================================
             KEY FINDINGS
@@ -334,47 +340,49 @@ export default function ExecutiveHealthAssessment({
             RECOMMENDED ACTIONS
             ================================================= */}
 
-        <div>
+        {showRecommendations && (
+          <div>
 
-          <h3 className="mb-5 text-lg font-semibold text-slate-900">
-            Recommended Actions
-          </h3>
+            <h3 className="mb-5 text-lg font-semibold text-slate-900">
+              Recommended Actions
+            </h3>
 
-          <div className="space-y-3">
+            <div className="space-y-3">
 
-            {prediction.recommendations?.length > 0 ? (
-              prediction.recommendations.map(
-                (recommendation, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
-                  >
+              {prediction.recommendations?.length > 0 ? (
+                prediction.recommendations.map(
+                  (recommendation, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                    >
 
-                    <div className="mt-0.5 rounded-full bg-emerald-100 p-1.5">
+                      <div className="mt-0.5 rounded-full bg-emerald-100 p-1.5">
 
-                      <CheckCircle2
-                        size={16}
-                        className="text-emerald-600"
-                      />
+                        <CheckCircle2
+                          size={16}
+                          className="text-emerald-600"
+                        />
+
+                      </div>
+
+                      <p className="text-sm leading-6 text-slate-600">
+                        {recommendation}
+                      </p>
 
                     </div>
-
-                    <p className="text-sm leading-6 text-slate-600">
-                      {recommendation}
-                    </p>
-
-                  </div>
+                  )
                 )
-              )
-            ) : (
-              <p className="text-sm text-slate-500">
-                No recommendations available.
-              </p>
-            )}
+              ) : (
+                <p className="text-sm text-slate-500">
+                  No recommendations available.
+                </p>
+              )}
+
+            </div>
 
           </div>
-
-        </div>
+        )}
 
       </div>
 

@@ -25,6 +25,7 @@ import {
   getDoctorConsultations,
   getDoctorMedications,
   prescribeMedication,
+  updateDoctorPatientNotes,
   DoctorPatient,
   DoctorConsultation,
   PrescribedMedication,
@@ -36,6 +37,9 @@ export default function DoctorDashboard() {
 
   const [patient, setPatient] = useState<DoctorPatient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [doctorNotes, setDoctorNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesMessage, setNotesMessage] = useState("");
 
   const [consultations, setConsultations] = useState<
     DoctorConsultation[]
@@ -85,6 +89,7 @@ export default function DoctorDashboard() {
         const data = await getDoctorPatient();
 
         setPatient(data);
+        setDoctorNotes(data?.notes ?? "");
       } catch (error) {
         console.error("Failed to load doctor patient:", error);
       } finally {
@@ -94,6 +99,33 @@ export default function DoctorDashboard() {
 
     loadPatient();
   }, []);
+
+  // =====================================================
+  // SAVE DOCTOR NOTES
+  // =====================================================
+
+  const handleSaveNotes = async () => {
+    if (!patient) {
+      setNotesMessage("No patient is currently assigned to this doctor.");
+      return;
+    }
+
+    try {
+      setSavingNotes(true);
+      setNotesMessage("");
+
+      const updatedNotes = await updateDoctorPatientNotes(doctorNotes);
+
+      setDoctorNotes(updatedNotes.notes ?? "");
+      setPatient({ ...patient, notes: updatedNotes.notes });
+      setNotesMessage("Notes saved successfully.");
+    } catch (error) {
+      console.error("Failed to save doctor notes:", error);
+      setNotesMessage("Unable to save notes. Please try again.");
+    } finally {
+      setSavingNotes(false);
+    }
+  };
 
   // =====================================================
   // LOAD DOCTOR CONSULTATIONS
@@ -1006,15 +1038,33 @@ export default function DoctorDashboard() {
 
           <textarea
             placeholder="Enter consultation notes..."
+            value={doctorNotes}
+            onChange={(event) => {
+              setDoctorNotes(event.target.value);
+              setNotesMessage("");
+            }}
             className="mt-6 min-h-32 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
           />
 
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <p
+              aria-live="polite"
+              className={`text-sm ${
+                notesMessage === "Notes saved successfully."
+                  ? "text-emerald-600"
+                  : "text-red-600"
+              }`}
+            >
+              {notesMessage}
+            </p>
+
             <button
               type="button"
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              onClick={handleSaveNotes}
+              disabled={savingNotes || !patient}
+              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Save Notes
+              {savingNotes ? "Saving..." : "Save Notes"}
             </button>
           </div>
         </section>

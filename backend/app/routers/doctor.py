@@ -33,6 +33,7 @@ from app.schemas.consultation import (
     ConsultationResponse,
     ConsultationStatusUpdate,
 )
+from app.schemas.patient import PatientNotesUpdate
 from app.services.auth_service import AuthService
 
 
@@ -397,6 +398,42 @@ def get_doctor_patient(
 
         "notes": patient.notes,
     }
+
+
+# ==========================================================
+# Update Assigned Patient Notes
+# ==========================================================
+
+@router.patch("/patient/notes")
+def update_doctor_patient_notes(
+    request: PatientNotesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Doctor access required",
+        )
+
+    patient = (
+        db.query(Patient)
+        .filter(Patient.doctor_id == current_user.id)
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="No patient is assigned to this doctor",
+        )
+
+    patient.notes = request.notes.strip() if request.notes else None
+
+    db.commit()
+    db.refresh(patient)
+
+    return {"notes": patient.notes}
 
 
 # ==========================================================

@@ -241,6 +241,7 @@ export default function OverviewSection() {
 
         <ExecutiveHealthAssessment
           prediction={null}
+          showRecommendations={false}
         />
 
       </div>
@@ -305,10 +306,18 @@ export default function OverviewSection() {
           - caregiver guidance
           - disclaimer
           - sources
+
+          showRecommendations is false here because this
+          is the caregiver dashboard — "Recommended Actions"
+          is intentionally hidden for caregivers. The Family
+          dashboard's own ExecutiveHealthAssessment call
+          (in FamilyDashboard / FamilyAIInsight) is untouched
+          and keeps the default (true), so it still shows.
           ================================================= */}
 
       <ExecutiveHealthAssessment
         prediction={prediction}
+        showRecommendations={false}
       />
 
     </div>

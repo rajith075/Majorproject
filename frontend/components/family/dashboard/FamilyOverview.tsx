@@ -10,6 +10,44 @@ interface AIPrediction {
   clinical_event?: string;
 }
 
+// Maps a risk level to its Tailwind classes.
+// Falls back to slate for unknown/N-A values.
+const getRiskStyles = (risk?: string) => {
+  switch (risk?.toLowerCase()) {
+    case "low":
+    case "stable":
+      return {
+        border: "border-emerald-100",
+        dot: "bg-emerald-500",
+        text: "text-emerald-600",
+      };
+    case "moderate":
+      return {
+        border: "border-amber-100",
+        dot: "bg-amber-500",
+        text: "text-amber-600",
+      };
+    case "high":
+      return {
+        border: "border-orange-100",
+        dot: "bg-orange-500",
+        text: "text-orange-600",
+      };
+    case "critical":
+      return {
+        border: "border-red-100",
+        dot: "bg-red-500",
+        text: "text-red-600",
+      };
+    default:
+      return {
+        border: "border-slate-100",
+        dot: "bg-slate-400",
+        text: "text-slate-600",
+      };
+  }
+};
+
 export default function FamilyOverview() {
   const patient = usePatientStore((state) => state.patient);
 
@@ -65,6 +103,8 @@ export default function FamilyOverview() {
   const healthScore =
     prediction?.overall_health_score ?? 0;
 
+  const riskStyles = getRiskStyles(prediction?.health_risk);
+
   return (
     <section>
       <div className="mb-4">
@@ -79,15 +119,17 @@ export default function FamilyOverview() {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {/* Health Risk */}
-        <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm">
+        <div
+          className={`rounded-2xl border bg-white p-6 shadow-sm ${riskStyles.border}`}
+        >
           <p className="text-sm font-medium text-slate-500">
             Health Risk
           </p>
 
           <div className="mt-4 flex items-center gap-3">
-            <div className="h-3 w-3 rounded-full bg-emerald-500" />
+            <div className={`h-3 w-3 rounded-full ${riskStyles.dot}`} />
 
-            <h3 className="text-2xl font-bold text-emerald-600">
+            <h3 className={`text-2xl font-bold ${riskStyles.text}`}>
               {healthRisk}
             </h3>
           </div>

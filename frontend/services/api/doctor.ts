@@ -104,6 +104,16 @@ export const getDoctorPatient = async (): Promise<
   return response.data;
 };
 
+export const updateDoctorPatientNotes = async (
+  notes: string
+): Promise<{ notes: string | null }> => {
+  const response = await API.patch("/doctor/patient/notes", {
+    notes,
+  });
+
+  return response.data;
+};
+
 // =====================================================
 // DOCTOR CONSULTATION
 // =====================================================
