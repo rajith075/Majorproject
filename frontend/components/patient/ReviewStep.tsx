@@ -10,8 +10,30 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+interface PatientReviewData {
+  full_name: string;
+  age: number;
+  gender: string;
+  blood_group: string;
+  phone: string;
+  address: string;
+  medical_conditions: string[];
+  allergies: string[];
+  medications: string[];
+  emergency_contact_name: string;
+  relationship: string;
+  emergency_contact_phone: string;
+  secondary_contact: string;
+  assigned_doctor: string;
+  hospital: string;
+  doctor_phone: string;
+  mobility: string;
+  memory_status: string;
+  notes: string;
+}
+
 interface Props {
-  data: any;
+  data: PatientReviewData;
   onBack: () => void;
   onSubmit: () => void;
 }
@@ -51,7 +73,7 @@ function Item({
   value,
 }: {
   label: string;
-  value: any;
+  value: string | number | undefined;
 }) {
   return (
     <div className="flex justify-between border-b border-slate-100 py-3">
@@ -218,11 +240,6 @@ export default function ReviewStep({
           <Item
             label="Hospital"
             value={data.hospital}
-          />
-
-          <Item
-            label="Caregiver"
-            value={data.assigned_caregiver}
           />
 
           <Item

@@ -7,6 +7,7 @@ import FamilyOverview from "./FamilyOverview";
 import FamilyAIInsight from "./FamilyAIInsight";
 import FamilyVitals from "./FamilyVitals";
 import FamilyDoctors from "./FamilyDoctors";
+import FamilyCareTeam from "./FamilyCareTeam";
 
 import { usePatientStore } from "@/store/patient-store";
 import { getMyMedications } from "@/services/api/medication";
@@ -15,6 +16,10 @@ import {
   getPatientEmergencyAlerts,
   EmergencyAlert,
 } from "@/services/api/emergency";
+import {
+  announceEmergencyAlert,
+  EMERGENCY_ALERT_EVENT,
+} from "@/lib/emergency-alert";
 
 interface Medication {
   id: number;
@@ -49,49 +54,6 @@ export default function FamilyDashboard() {
   const latestEmergencyAlertId = useRef<number | null>(null);
 
   // ==========================================================
-  // UNLOCK EMERGENCY AUDIO (Chrome autoplay policy workaround)
-  // ==========================================================
-
-  useEffect(() => {
-    const unlockEmergencySound = () => {
-      const audio = new Audio("/sounds/emergency-alert.mp3");
-      audio.volume = 0;
-
-      audio
-        .play()
-        .then(() => {
-          audio.pause();
-          audio.currentTime = 0;
-
-          console.log(
-            "[EMERGENCY SOUND] Audio unlocked successfully."
-          );
-
-          // Remove listeners ONLY after successful unlock
-          window.removeEventListener("click", unlockEmergencySound);
-          window.removeEventListener("keydown", unlockEmergencySound);
-        })
-        .catch((error) => {
-          console.warn(
-            "[EMERGENCY SOUND] Audio unlock failed:",
-            error
-          );
-
-          // Keep listeners active so another user interaction
-          // can try again.
-        });
-    };
-
-    window.addEventListener("click", unlockEmergencySound);
-    window.addEventListener("keydown", unlockEmergencySound);
-
-    return () => {
-      window.removeEventListener("click", unlockEmergencySound);
-      window.removeEventListener("keydown", unlockEmergencySound);
-    };
-  }, []);
-
-  // ==========================================================
   // LOAD MEDICATIONS
   // ==========================================================
 
@@ -119,7 +81,7 @@ export default function FamilyDashboard() {
   // ==========================================================
 
   useEffect(() => {
-    const loadEmergencyAlerts = async () => {
+    const loadEmergencyAlerts = async (playFallbackSound = false) => {
       if (!patient?.id) {
         setEmergencyLoading(false);
         return;
@@ -142,23 +104,9 @@ export default function FamilyDashboard() {
           } else if (newestAlert.id !== latestEmergencyAlertId.current) {
             // 🔊 NEW EMERGENCY ALERT DETECTED
             latestEmergencyAlertId.current = newestAlert.id;
-
-            const audio = new Audio("/sounds/emergency-alert.mp3");
-            audio.volume = 1.0;
-
-            audio
-              .play()
-              .then(() => {
-                console.log(
-                  "[EMERGENCY SOUND] Custom alert sound played."
-                );
-              })
-              .catch((error) => {
-                console.error(
-                  "[EMERGENCY SOUND] Failed to play:",
-                  error
-                );
-              });
+            if (playFallbackSound) {
+              announceEmergencyAlert({ id: newestAlert.id });
+            }
           }
         }
 
@@ -177,13 +125,18 @@ export default function FamilyDashboard() {
 
     loadEmergencyAlerts();
 
-    // Refresh emergency alerts every 3 seconds
-    // so newly generated AI emergencies appear automatically.
-    const interval = setInterval(() => {
-      loadEmergencyAlerts();
-    }, 3000);
+    const refreshAfterPush = () => loadEmergencyAlerts(false);
+    window.addEventListener(EMERGENCY_ALERT_EVENT, refreshAfterPush);
 
-    return () => clearInterval(interval);
+    // Fallback for browsers without FCM or a disconnected service worker.
+    const interval = setInterval(() => {
+      loadEmergencyAlerts(true);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(EMERGENCY_ALERT_EVENT, refreshAfterPush);
+    };
   }, [patient?.id]);
 
   return (
@@ -224,7 +177,7 @@ export default function FamilyDashboard() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Track the patient's scheduled medicines.
+                Track the patient&apos;s scheduled medicines.
               </p>
             </div>
           </div>
@@ -537,19 +490,13 @@ export default function FamilyDashboard() {
                 }
               />
 
-              <PatientInfo
-                label="Caregiver"
-                value={
-                  patient.assigned_caregiver ||
-                  "Not assigned"
-                }
-              />
-
             </div>
           )}
 
         </div>
       </section>
+
+      <FamilyCareTeam />
 
       {/* ================= DOCTORS ================= */}
       <FamilyDoctors />

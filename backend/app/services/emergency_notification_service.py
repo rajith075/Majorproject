@@ -6,6 +6,8 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.models.vital_log import VitalLog
 from app.models.emergency_alert import EmergencyAlert
+from app.models.caregiver_patient import CaregiverPatient
+from app.models.device_token import DeviceToken
 
 from app.services.notification_service import notification_service
 
@@ -41,16 +43,21 @@ class EmergencyNotificationService:
         ).first()
 
         # =====================================================
-        # FIND CAREGIVER
+        # FIND ACTIVE CAREGIVERS
         # =====================================================
 
-        caregiver = None
-
-        if patient.caregiver_id:
-
-            caregiver = db.query(User).filter(
-                User.id == patient.caregiver_id
-            ).first()
+        caregivers = (
+            db.query(User)
+            .join(
+                CaregiverPatient,
+                CaregiverPatient.caregiver_id == User.id,
+            )
+            .filter(
+                CaregiverPatient.patient_id == patient.id,
+                CaregiverPatient.status == "active",
+            )
+            .all()
+        )
 
         # =====================================================
         # SELECT HIGHEST SEVERITY
@@ -160,44 +167,48 @@ class EmergencyNotificationService:
 
         push_success = False
 
-        fcm_test_token = os.getenv(
-            "FCM_TEST_TOKEN"
+        recipient_user_ids = [
+            user.id
+            for user in [family_member, *caregivers]
+            if user is not None
+        ]
+        registered_tokens = (
+            db.query(DeviceToken.token)
+            .filter(DeviceToken.user_id.in_(recipient_user_ids))
+            .all()
+            if recipient_user_ids
+            else []
         )
+        tokens = {token for (token,) in registered_tokens}
 
+        # Keep the explicit test token as a development fallback only.
+        fcm_test_token = os.getenv("FCM_TEST_TOKEN")
         if fcm_test_token:
+            tokens.add(fcm_test_token.strip())
 
-            push_title = (
-                f"ElderCare {emergency_status}"
-            )
-
-            push_message = (
-                f"Patient {patient.id}: "
-                f"{title}. "
-                f"{message}"
-            )
-
+        push_title = f"ElderCare {emergency_status}"
+        push_message = f"Patient {patient.id}: {title}. {message}"
+        push_data = {
+            "type": "emergency",
+            "patient_id": patient.id,
+            "emergency_id": emergency_alert_record.id,
+            "severity": severity,
+            "event": str(title),
+        }
+        for token in tokens:
             push_success = (
                 notification_service.send_push_notification(
-                    token=fcm_test_token,
+                    token=token,
                     title=push_title,
                     message=push_message,
-                    data={
-                        "type": "emergency",
-                        "patient_id": patient.id,
-                        "emergency_id": (
-                            emergency_alert_record.id
-                        ),
-                        "severity": severity,
-                        "event": str(title),
-                    },
+                    data=push_data,
+                    urgent=True,
                 )
+                or push_success
             )
 
-        else:
-
-            print(
-                "[FCM] FCM_TEST_TOKEN is not configured."
-            )
+        if not tokens:
+            print("[FCM] No device token is registered for this care team.")
 
         # =====================================================
         # CRITICAL → TWILIO CALL
@@ -249,16 +260,11 @@ class EmergencyNotificationService:
                         ).strip()
                     )
 
-                if (
-                    caregiver
-                    and caregiver.phone
-                ):
-
-                    notification_recipients.add(
-                        str(
-                            caregiver.phone
-                        ).strip()
-                    )
+                for caregiver in caregivers:
+                    if caregiver.phone:
+                        notification_recipients.add(
+                            str(caregiver.phone).strip()
+                        )
 
             # =============================================
             # TWILIO CALL

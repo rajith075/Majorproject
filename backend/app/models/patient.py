@@ -39,7 +39,9 @@ class Patient(Base):
     )
 
     # ==========================================================
-    # Caregiver Assignment
+    # Legacy Caregiver Assignment
+    # New caregiver links are stored in caregiver_patients. These fields remain
+    # only so existing deployments do not lose historical data.
     # ==========================================================
 
     caregiver_id = Column(

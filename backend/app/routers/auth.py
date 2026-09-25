@@ -12,6 +12,7 @@ from app.services.auth_service import AuthService
 from app.core.security import create_access_token
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.services.caregiver_invitation_service import CaregiverInvitationService
 
 
 router = APIRouter(
@@ -30,17 +31,35 @@ def register(
     db: Session = Depends(get_db),
 ):
 
-    user = AuthService.register(db, request)
+    try:
+        user = AuthService.register(db, request)
+        if not user:
+            raise HTTPException(status_code=400, detail="Email already exists or role is invalid")
 
-    if not user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already exists",
+        if request.invitation_token:
+            if user.role != "caregiver":
+                raise HTTPException(
+                    status_code=422,
+                    detail="An invitation token can only be used to create a caregiver account.",
+                )
+            CaregiverInvitationService.accept(db, request.invitation_token, user, commit=False)
+
+        db.commit()
+        db.refresh(user)
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
+    response = {"message": "Account created successfully"}
+    if request.invitation_token:
+        response.update(
+            access_token=create_access_token({"sub": user.email, "id": user.id}),
+            token_type="bearer",
         )
-
-    return {
-        "message": "Account created successfully"
-    }
+    return response
 
 
 # ==========================================================

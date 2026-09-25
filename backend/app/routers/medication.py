@@ -13,6 +13,7 @@ from app.schemas.medication import (
 )
 from app.services.medication import MedicationService
 from app.models.doctor_patient import DoctorPatient
+from app.models.caregiver_patient import CaregiverPatient
 
 
 router = APIRouter(
@@ -83,8 +84,10 @@ def get_caregiver_medications(
 
     patient = (
         db.query(Patient)
+        .join(CaregiverPatient, CaregiverPatient.patient_id == Patient.id)
         .filter(
-            Patient.caregiver_id == current_user.id
+            CaregiverPatient.caregiver_id == current_user.id,
+            CaregiverPatient.status == "active",
         )
         .first()
     )
@@ -162,7 +165,17 @@ def mark_medication_as_given(
             detail="Patient not found.",
         )
 
-    if patient.caregiver_id != current_user.id:
+    caregiver_link = (
+        db.query(CaregiverPatient)
+        .filter(
+            CaregiverPatient.patient_id == patient.id,
+            CaregiverPatient.caregiver_id == current_user.id,
+            CaregiverPatient.status == "active",
+        )
+        .first()
+    )
+
+    if not caregiver_link:
         raise HTTPException(
             status_code=403,
             detail="You are not assigned to this patient.",

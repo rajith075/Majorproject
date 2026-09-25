@@ -8,16 +8,18 @@ from sentence_transformers import SentenceTransformer
 class EmbeddingService:
 
     def __init__(self):
+        # Loading SentenceTransformer can download model files.  Keep that
+        # optional network work out of FastAPI import/startup so the API can
+        # still run when the RAG model is not cached locally.
+        self.model = None
 
-        print("=" * 60)
-        print("Loading RAG Embedding Model...")
-        print("=" * 60)
+    def _get_model(self):
+        if self.model is None:
+            print("Loading RAG Embedding Model...")
+            self.model = SentenceTransformer("all-MiniLM-L6-v2")
+            print("[OK] RAG Embedding Model Loaded")
 
-        self.model = SentenceTransformer(
-            "all-MiniLM-L6-v2"
-        )
-
-        print("✅ RAG Embedding Model Loaded")
+        return self.model
 
     # ======================================================
     # Embed Single Text
@@ -25,7 +27,7 @@ class EmbeddingService:
 
     def embed_text(self, text):
 
-        return self.model.encode(
+        return self._get_model().encode(
             text,
             convert_to_numpy=True,
         )

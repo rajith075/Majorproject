@@ -90,7 +90,7 @@ class ModelLoader:
         # V2 Health Model expects 99 features.
         # --------------------------------------------------
 
-        print("✅ Health Risk Model Loaded")
+        print("[OK] Health Risk Model Loaded")
 
         # ==================================================
         # Clinical Event Model
@@ -130,7 +130,7 @@ class ModelLoader:
             self.model_dir / "clinical_event_label_encoder.pkl"
         )
 
-        print("✅ Clinical Event Model Loaded")
+        print("[OK] Clinical Event Model Loaded")
 
         # ==================================================
         # Model Information
@@ -173,7 +173,7 @@ class ModelLoader:
             )
 
         print(
-            "✅ Health model expects exactly "
+            "[OK] Health model expects exactly "
             f"{len(self.health_features)} features."
         )
 
@@ -182,7 +182,7 @@ class ModelLoader:
         # ==================================================
 
         print(
-            "✅ Clinical model expects "
+            "[OK] Clinical model expects "
             f"{len(self.clinical_features)} features."
         )
 

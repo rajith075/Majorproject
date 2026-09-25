@@ -369,6 +369,7 @@ class NotificationService:
         title: str,
         message: str,
         data: dict | None = None,
+        urgent: bool = False,
     ):
 
         if not token:
@@ -398,6 +399,18 @@ class NotificationService:
                 ),
 
                 data=payload_data,
+
+                # Web Push defaults can be deferred by a browser. Emergency
+                # alerts are explicitly high-urgency and short-lived.
+                webpush=messaging.WebpushConfig(
+                    headers={
+                        "Urgency": "high" if urgent else "normal",
+                        "TTL": "60" if urgent else "3600",
+                    },
+                    notification=messaging.WebpushNotification(
+                        require_interaction=urgent,
+                    ),
+                ),
 
                 token=token,
             )

@@ -106,3 +106,7 @@ export const createEmergencyAlert = async (data: {
 
   return response.data;
 };
+
+export const registerEmergencyDevice = async (token: string): Promise<void> => {
+  await API.post("/notifications/device-token", { token });
+};

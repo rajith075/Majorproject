@@ -104,13 +104,8 @@ class PatientService:
             # ==========================================
 
             assigned_doctor=request.assigned_doctor,
-            assigned_caregiver=request.assigned_caregiver,
             hospital=request.hospital,
             doctor_phone=request.doctor_phone,
-
-            # caregiver_id remains NULL initially
-            # It will be assigned separately after
-            # the son selects a virtual caregiver.
 
             # ==========================================
             # Notes
@@ -146,7 +141,6 @@ class PatientService:
             db.commit()
 
         return patient
-
     # ==========================================================
     # Get Patient
     # ==========================================================
@@ -251,7 +245,6 @@ class PatientService:
         # ==========================================
 
         patient.assigned_doctor = request.assigned_doctor
-        patient.assigned_caregiver = request.assigned_caregiver
         patient.hospital = request.hospital
         patient.doctor_phone = request.doctor_phone
 
@@ -265,78 +258,3 @@ class PatientService:
         db.refresh(patient)
 
         return patient
-
-    # ==========================================================
-    # Get Available Virtual Caregivers
-    # ==========================================================
-
-    @staticmethod
-    def get_available_caregivers(
-        db: Session,
-    ):
-
-        return (
-            db.query(User)
-            .filter(
-                User.role == "caregiver",
-                User.is_active == True,
-            )
-            .all()
-        )
-
-    # ==========================================================
-    # Assign Caregiver
-    # ==========================================================
-
-    @staticmethod
-    def assign_caregiver(
-        db: Session,
-        user_id: int,
-        caregiver_id: int,
-    ):
-
-        # ------------------------------------------
-        # Find patient's profile
-        # ------------------------------------------
-
-        patient = (
-            db.query(Patient)
-            .filter(
-                Patient.user_id == user_id
-            )
-            .first()
-        )
-
-        if not patient:
-            return None, "Patient profile not found."
-
-        # ------------------------------------------
-        # Verify caregiver exists
-        # ------------------------------------------
-
-        caregiver = (
-            db.query(User)
-            .filter(
-                User.id == caregiver_id,
-                User.role == "caregiver",
-                User.is_active == True,
-            )
-            .first()
-        )
-
-        if not caregiver:
-            return None, "Caregiver not found."
-
-        # ------------------------------------------
-        # Assign caregiver
-        # ------------------------------------------
-
-        patient.caregiver_id = caregiver.id
-
-        # Keep old field synchronized
-        patient.assigned_caregiver = caregiver.full_name
-
-        db.commit()
-        db.refresh(patient)
-
-        return patient, None

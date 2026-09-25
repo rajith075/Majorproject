@@ -61,9 +61,10 @@ class AuthService:
             role=role,
         )
 
+        # The caller owns the transaction. This lets caregiver registration and
+        # invitation acceptance succeed or fail as one operation.
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        db.flush()
 
         return user
 

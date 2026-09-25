@@ -38,6 +38,7 @@ from app.schemas.vital_log import DoctorBloodPressureCreate
 from app.services.auth_service import AuthService
 from app.models.doctor_patient import DoctorPatient
 from app.models.vital_log import VitalLog
+from app.models.caregiver_patient import CaregiverPatient
 
 
 router = APIRouter(
@@ -382,6 +383,20 @@ def get_doctor_patient(
     if not patient:
         return None
 
+    caregiver_link = (
+        db.query(CaregiverPatient)
+        .filter(
+            CaregiverPatient.patient_id == patient.id,
+            CaregiverPatient.status == "active",
+        )
+        .first()
+    )
+    caregiver = (
+        db.query(User).filter(User.id == caregiver_link.caregiver_id).first()
+        if caregiver_link
+        else None
+    )
+
     return {
         "id": patient.id,
         "full_name": patient.full_name,
@@ -410,7 +425,7 @@ def get_doctor_patient(
         "emergency_contact_phone": patient.emergency_contact_phone,
         "relationship": patient.relationship,
 
-        "assigned_caregiver": patient.assigned_caregiver,
+        "assigned_caregiver": caregiver.full_name if caregiver else None,
         "hospital": patient.hospital,
         "doctor_phone": patient.doctor_phone,
 

@@ -52,7 +52,7 @@ class GeminiService:
 
         self.fallback_model = "gemini-2.5-flash"
 
-        print("✅ Gemini Service Loaded")
+        print("[OK] Gemini Service Loaded")
         print(
             f"Primary Model: {self.primary_model}"
         )

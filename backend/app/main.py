@@ -20,6 +20,11 @@ from app.models.doctor_profile import DoctorProfile
 from app.models.emergency_alert import EmergencyAlert
 from app.routers.emergency import router as emergency_router
 from app.routers.twilio_voice import router as twilio_voice_router
+from app.routers.notification import router as notification_router
+from app.services.medication_scheduler import (
+    start_medication_scheduler,
+    stop_medication_scheduler,
+)
 
 
 # ==========================================================
@@ -38,6 +43,10 @@ from app.models.vital_log import VitalLog
 from app.models.prediction_history import PredictionHistory
 from app.models.doctor_verification import DoctorVerification
 from app.models.doctor_patient import DoctorPatient
+from app.models.caregiver_patient import CaregiverPatient
+from app.models.caregiver_invitation import CaregiverInvitation
+from app.models.device_token import DeviceToken
+from app.models.medication_reminder import MedicationReminder
 
 # ==========================================================
 # FastAPI App
@@ -69,6 +78,16 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+
+@app.on_event("startup")
+def start_background_jobs():
+    start_medication_scheduler()
+
+
+@app.on_event("shutdown")
+def stop_background_jobs():
+    stop_medication_scheduler()
+
 # ==========================================================
 # API Routers
 # ==========================================================
@@ -83,6 +102,7 @@ app.include_router(medication_router)
 app.include_router(doctor_router)
 app.include_router(emergency_router)
 app.include_router(twilio_voice_router)
+app.include_router(notification_router)
 # ==========================================================
 # Root Endpoint
 # ==========================================================

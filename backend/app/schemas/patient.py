@@ -77,7 +77,6 @@ class PatientCreate(BaseModel):
     # ======================================================
 
     assigned_doctor: Optional[str] = None
-    assigned_caregiver: Optional[str] = None
     hospital: Optional[str] = None
     doctor_phone: Optional[str] = None
 
@@ -134,23 +133,3 @@ class PatientResponse(PatientCreate):
 
     class Config:
         from_attributes = True
-
-
-# ==========================================================
-# Caregiver Assignment
-# ==========================================================
-
-class CaregiverResponse(BaseModel):
-
-    id: int
-    full_name: str
-    email: str
-    phone: str
-
-    class Config:
-        from_attributes = True
-
-
-class CaregiverAssignment(BaseModel):
-
-    caregiver_id: int

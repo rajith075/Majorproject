@@ -193,7 +193,7 @@ export default function PatientWizard() {
         "Patient Profile Created Successfully!",
         {
           description:
-            "Your elderly care profile is ready. Let's choose a caregiver.",
+            "Your elderly care profile is ready. Invite caregivers anytime from Care Team.",
         }
       );
 
@@ -205,23 +205,9 @@ export default function PatientWizard() {
         setTimeout(resolve, 2000)
       );
 
-      // ------------------------------------------------------
-      // IMPORTANT:
-      //
-      // DO NOT GO TO /dashboard HERE.
-      //
-      // Family member must select a caregiver first.
-      // ------------------------------------------------------
+      router.replace("/dashboard");
 
-      console.log(
-        "FAMILY: REDIRECTING TO CAREGIVER SELECTION"
-      );
-
-      router.replace(
-        "/caregiver-selection"
-      );
-
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "================================================"
       );
@@ -241,10 +227,7 @@ export default function PatientWizard() {
 
       setLoading(false);
 
-      toast.error(
-        error?.response?.data?.detail ??
-          "Unable to create patient profile."
-      );
+      toast.error("Unable to create patient profile.");
     }
   };
 

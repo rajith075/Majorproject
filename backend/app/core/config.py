@@ -36,6 +36,21 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
 
     # ======================================================
+    # Invitation email delivery
+    # ======================================================
+
+    APP_BASE_URL: str = "http://localhost:3000"
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
+    SMTP_USE_TLS: bool = True
+
+    # Medication schedules are interpreted in the care team's local timezone.
+    MEDICATION_REMINDER_TIMEZONE: str = "Asia/Kolkata"
+
+    # ======================================================
     # Environment Configuration
     # ======================================================
 

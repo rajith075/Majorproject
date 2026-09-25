@@ -6,6 +6,7 @@ from app.core.dependencies import get_current_user
 
 from app.models.user import User
 from app.models.patient import Patient
+from app.models.caregiver_patient import CaregiverPatient
 
 from app.services.patient_profile_service import (
     patient_profile_service,
@@ -48,20 +49,23 @@ def get_authorized_patient(
     2. Caregiver assigned to the patient
     """
 
-    patient = (
-        db.query(Patient)
-        .filter(
-            Patient.id == patient_id,
-            (
-                (Patient.user_id == current_user.id)
-                |
-                (Patient.caregiver_id == current_user.id)
-            ),
-        )
-        .first()
-    )
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
 
-    if not patient:
+    caregiver_link = None
+    if patient and current_user.role == "caregiver":
+        caregiver_link = (
+            db.query(CaregiverPatient)
+            .filter(
+                CaregiverPatient.patient_id == patient.id,
+                CaregiverPatient.caregiver_id == current_user.id,
+                CaregiverPatient.status == "active",
+            )
+            .first()
+        )
+
+    if not patient or (
+        patient.user_id != current_user.id and not caregiver_link
+    ):
         raise HTTPException(
             status_code=404,
             detail="Patient not found or access denied.",

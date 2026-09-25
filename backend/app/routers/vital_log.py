@@ -7,6 +7,7 @@ from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.patient import Patient
 from app.models.doctor_patient import DoctorPatient
+from app.models.caregiver_patient import CaregiverPatient
 
 from app.schemas.vital_log import (
     VitalLogCreate,
@@ -92,9 +93,11 @@ def get_caregiver_latest_vitals(
 
     patient = (
         db.query(Patient)
+        .join(CaregiverPatient, CaregiverPatient.patient_id == Patient.id)
         .filter(
             Patient.id == patient_id,
-            Patient.caregiver_id == current_user.id,
+            CaregiverPatient.caregiver_id == current_user.id,
+            CaregiverPatient.status == "active",
         )
         .first()
     )

@@ -21,7 +21,6 @@ export interface Patient {
   secondary_contact: string;
 
   assigned_doctor: string;
-  assigned_caregiver: string;
   hospital: string;
   doctor_phone: string;
 

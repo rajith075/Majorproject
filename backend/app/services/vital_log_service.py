@@ -126,6 +126,61 @@ class VitalLogService:
                 ),
             })
 
+        # ----------------------------------------------------------
+        # HIGH RISK (same fast path as critical, but no voice call)
+        # ----------------------------------------------------------
+        # These ranges must not wait for the prediction/RAG pipeline before
+        # notifying the care team. Critical ranges above still take priority.
+
+        if data.spo2 is not None and 0 < data.spo2 < 90 and data.spo2 >= 85:
+            alerts.append({
+                "severity": "High",
+                "title": "Low Oxygen Saturation",
+                "message": f"Low oxygen saturation detected: SpO₂ {data.spo2}%.",
+            })
+
+        if data.heart_rate is not None and (
+            40 <= data.heart_rate < 50 or 120 < data.heart_rate <= 140
+        ):
+            alerts.append({
+                "severity": "High",
+                "title": "High Risk Heart Rate",
+                "message": f"High risk heart rate detected: {data.heart_rate} BPM.",
+            })
+
+        if (
+            data.systolic_bp is not None
+            and data.diastolic_bp is not None
+            and 0 < data.systolic_bp < 180
+            and 0 < data.diastolic_bp < 120
+            and (data.systolic_bp >= 160 or data.diastolic_bp >= 100)
+        ):
+            alerts.append({
+                "severity": "High",
+                "title": "High Blood Pressure",
+                "message": (
+                    "High blood pressure detected: "
+                    f"{data.systolic_bp}/{data.diastolic_bp} mmHg."
+                ),
+            })
+
+        if data.temperature is not None and 38.5 <= data.temperature < 40:
+            alerts.append({
+                "severity": "High",
+                "title": "High Temperature",
+                "message": f"High temperature detected: {data.temperature}°C.",
+            })
+
+        if data.respiratory_rate is not None and 24 <= data.respiratory_rate < 30:
+            alerts.append({
+                "severity": "High",
+                "title": "Elevated Respiratory Rate",
+                "message": (
+                    "Elevated respiratory rate detected: "
+                    f"{data.respiratory_rate}/min."
+                ),
+            })
+
         return alerts
 
     # ==============================================================
@@ -359,12 +414,20 @@ class VitalLogService:
             # trigger another call.
             # ------------------------------------------------------
 
-            immediate_was_sent = any(
+            immediate_was_sent = bool(immediate_alerts)
+            ai_requires_escalation = any(
+                alert.get("severity") == "Critical"
+                for alert in alerts
+            )
+            immediate_is_critical = any(
                 alert.get("severity") == "Critical"
                 for alert in immediate_alerts
             )
 
-            if alerts and not immediate_was_sent:
+            if alerts and (
+                not immediate_was_sent
+                or (ai_requires_escalation and not immediate_is_critical)
+            ):
 
                 emergency_notification_service.process_alerts(
                     db=db,

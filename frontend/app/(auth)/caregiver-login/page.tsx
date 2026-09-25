@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { loginUser } from "@/services/auth/login";
 import { AuthService } from "@/services/auth.service";
+import { acceptCaregiverInvitation } from "@/services/api/patient";
 
 export default function CaregiverLoginPage() {
   const router = useRouter();
@@ -72,28 +73,35 @@ export default function CaregiverLoginPage() {
         );
       }
 
+      const invitationToken = new URLSearchParams(window.location.search).get("invitation");
+      if (invitationToken) {
+        await acceptCaregiverInvitation(invitationToken);
+      }
+
       // ==================================================
       // 5. GO TO EXISTING DASHBOARD
       // ==================================================
 
       router.replace("/dashboard");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Do not leave an authenticated session behind if accepting the
+      // invitation failed (for example, when a different email signed in).
+      AuthService.removeToken();
       console.error(
         "❌ CAREGIVER LOGIN FAILED:",
         err
       );
 
       if (
-        err?.response?.status === 401
+        getStatusCode(err) === 401
       ) {
         setError(
           "Invalid caregiver email or password."
         );
       } else {
         setError(
-          err?.message ||
-            "Unable to sign in. Please try again."
+          getErrorMessage(err, "Unable to sign in. Please try again.")
         );
       }
 
@@ -208,7 +216,7 @@ export default function CaregiverLoginPage() {
               </h2>
 
               <p className="mt-6 max-w-md text-sm leading-7 text-violet-100">
-                Access the elderly patient's health information,
+                Access the elderly patient&apos;s health information,
                 vital signs, medication details, alerts and
                 AI-powered health insights from one secure dashboard.
               </p>
@@ -441,8 +449,7 @@ export default function CaregiverLoginPage() {
               </div>
 
               <p className="mt-6 text-center text-xs text-slate-400">
-                Caregiver accounts are created by the
-                Elderly Care AI administration system.
+                New to ElderCare? Open the invitation email to create your caregiver account.
               </p>
 
             </div>
@@ -455,4 +462,37 @@ export default function CaregiverLoginPage() {
 
     </main>
   );
+}
+
+function getStatusCode(error: unknown): number | undefined {
+  if (typeof error !== "object" || !error || !("response" in error)) {
+    return undefined;
+  }
+
+  const response = error.response;
+  if (typeof response !== "object" || !response || !("status" in response)) {
+    return undefined;
+  }
+
+  return typeof response.status === "number" ? response.status : undefined;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error !== "object" || !error) {
+    return fallback;
+  }
+
+  if ("response" in error) {
+    const response = error.response;
+    if (typeof response === "object" && response && "data" in response) {
+      const data = response.data;
+      if (typeof data === "object" && data && "detail" in data && typeof data.detail === "string") {
+        return data.detail;
+      }
+    }
+  }
+
+  return "message" in error && typeof error.message === "string"
+    ? error.message
+    : fallback;
 }

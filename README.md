@@ -28,6 +28,8 @@ Doctor registration and verification
 
 Doctor-patient relationships
 
+Caregiver invitation and acceptance workflow
+
 Appointment/consultation workflow
 
 Emergency alert persistence
