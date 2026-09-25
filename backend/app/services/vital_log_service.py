@@ -18,6 +18,120 @@ from app.services.emergency_notification_service import (
 
 class VitalLogService:
 
+    # ==============================================================
+    # FAST EMERGENCY SAFETY CHECK
+    # ==============================================================
+
+    @staticmethod
+    def get_immediate_emergency_alerts(data):
+
+        alerts = []
+
+        # ----------------------------------------------------------
+        # CRITICAL SpO2
+        # ----------------------------------------------------------
+
+        if (
+            data.spo2 is not None
+            and data.spo2 > 0
+            and data.spo2 < 85
+        ):
+            alerts.append({
+                "severity": "Critical",
+                "title": "Severe Hypoxia",
+                "message": (
+                    f"Critical oxygen saturation detected: "
+                    f"SpO₂ {data.spo2}%."
+                ),
+            })
+
+        # ----------------------------------------------------------
+        # CRITICAL HEART RATE
+        # ----------------------------------------------------------
+
+        if (
+            data.heart_rate is not None
+            and data.heart_rate > 0
+            and (
+                data.heart_rate < 40
+                or data.heart_rate > 140
+            )
+        ):
+            alerts.append({
+                "severity": "Critical",
+                "title": "Critical Heart Rate",
+                "message": (
+                    f"Critical heart rate detected: "
+                    f"{data.heart_rate} BPM."
+                ),
+            })
+
+        # ----------------------------------------------------------
+        # CRITICAL BLOOD PRESSURE
+        # ----------------------------------------------------------
+
+        if (
+            data.systolic_bp is not None
+            and data.diastolic_bp is not None
+            and data.systolic_bp > 0
+            and data.diastolic_bp > 0
+            and (
+                data.systolic_bp >= 180
+                or data.diastolic_bp >= 120
+            )
+        ):
+            alerts.append({
+                "severity": "Critical",
+                "title": "Critical Blood Pressure",
+                "message": (
+                    f"Critical blood pressure detected: "
+                    f"{data.systolic_bp}/"
+                    f"{data.diastolic_bp} mmHg."
+                ),
+            })
+
+        # ----------------------------------------------------------
+        # CRITICAL TEMPERATURE
+        # ----------------------------------------------------------
+
+        if (
+            data.temperature is not None
+            and data.temperature > 0
+            and data.temperature >= 40
+        ):
+            alerts.append({
+                "severity": "Critical",
+                "title": "Critical Temperature",
+                "message": (
+                    f"Critical temperature detected: "
+                    f"{data.temperature}°C."
+                ),
+            })
+
+        # ----------------------------------------------------------
+        # CRITICAL RESPIRATORY RATE
+        # ----------------------------------------------------------
+
+        if (
+            data.respiratory_rate is not None
+            and data.respiratory_rate > 0
+            and data.respiratory_rate >= 30
+        ):
+            alerts.append({
+                "severity": "Critical",
+                "title": "Respiratory Distress",
+                "message": (
+                    f"Critical respiratory rate detected: "
+                    f"{data.respiratory_rate}/min."
+                ),
+            })
+
+        return alerts
+
+    # ==============================================================
+    # CREATE VITAL LOG
+    # ==============================================================
+
     @staticmethod
     def create_vital_log(
         db: Session,
@@ -26,7 +140,7 @@ class VitalLogService:
     ):
 
         # ==========================================================
-        # CREATE VITAL LOG
+        # 1. CREATE VITAL LOG
         # ==========================================================
 
         vital = VitalLog(
@@ -46,7 +160,7 @@ class VitalLogService:
         db.add(vital)
 
         # ==========================================================
-        # UPDATE PATIENT LATEST SNAPSHOT
+        # 2. UPDATE PATIENT SNAPSHOT
         # ==========================================================
 
         patient.last_heart_rate = data.heart_rate
@@ -57,28 +171,110 @@ class VitalLogService:
         patient.last_respiratory_rate = data.respiratory_rate
 
         # ==========================================================
-        # SAVE VITAL FIRST
+        # 3. SAVE IMMEDIATELY
         # ==========================================================
 
         db.commit()
         db.refresh(vital)
 
         # ==========================================================
-        # REAL-TIME AI PREDICTION + EMERGENCY NOTIFICATION
+        # 4. FAST EMERGENCY CHECK
+        # ==========================================================
+        #
+        # IMPORTANT:
+        #
+        # This happens BEFORE PredictionService.
+        #
+        # Therefore FCM/Twilio does not wait for:
+        #
+        # ML → RAG → Gemini → Recommendations
+        #
         # ==========================================================
 
         try:
 
-            # ------------------------------------------------------
-            # 1. GET COMPLETE PATIENT PROFILE
-            # ------------------------------------------------------
+            immediate_alerts = (
+                VitalLogService.get_immediate_emergency_alerts(
+                    data
+                )
+            )
 
-            profile = patient_profile_service.get_complete_profile(
-                db=db,
-                patient_id=patient.id,
+            if immediate_alerts:
+
+                print("=" * 70)
+                print("🚨 IMMEDIATE EMERGENCY DETECTED")
+                print("=" * 70)
+
+                print(
+                    f"Patient       : {patient.id}"
+                )
+
+                print(
+                    f"Vital Log     : {vital.id}"
+                )
+
+                print(
+                    f"Immediate Alerts: "
+                    f"{immediate_alerts}"
+                )
+
+                # --------------------------------------------------
+                # SEND FCM / TWILIO IMMEDIATELY
+                # --------------------------------------------------
+
+                emergency_notification_service.process_alerts(
+                    db=db,
+                    patient=patient,
+                    vital=vital,
+                    alerts=immediate_alerts,
+                )
+
+                print("=" * 70)
+                print("🚨 EMERGENCY NOTIFICATION SENT")
+                print("=" * 70)
+
+            else:
+
+                print(
+                    "[IMMEDIATE SAFETY] "
+                    "No critical vital threshold detected."
+                )
+
+        except Exception as e:
+
+            print(
+                "[IMMEDIATE EMERGENCY ERROR]",
+                str(e),
+            )
+
+        # ==========================================================
+        # 5. EXISTING AI PIPELINE
+        # ==========================================================
+        #
+        # The existing AI system remains intact.
+        #
+        # This is used for:
+        #
+        # - Health risk prediction
+        # - Clinical event prediction
+        # - AI explanation
+        # - RAG
+        # - Recommendations
+        # - Dashboard insights
+        #
+        # ==========================================================
+
+        try:
+
+            profile = (
+                patient_profile_service.get_complete_profile(
+                    db=db,
+                    patient_id=patient.id,
+                )
             )
 
             if profile is None:
+
                 print(
                     f"[REAL-TIME AI] Patient profile not found: "
                     f"{patient.id}"
@@ -86,53 +282,33 @@ class VitalLogService:
 
                 return vital
 
-            # ------------------------------------------------------
-            # 2. RUN EXISTING AI PREDICTION PIPELINE
-            # ------------------------------------------------------
-            #
-            # Existing architecture:
-            #
-            # PatientProfileService
-            #        ↓
-            # Feature Pipeline
-            #        ↓
-            # Health Risk Model
-            #        ↓
-            # Clinical Event Model
-            #        ↓
-            # Existing AlertEngine
-            #
-            # No duplicate ML model.
-            # No duplicate prediction logic.
-            # ------------------------------------------------------
-
-            prediction_result = prediction_service.predict(
-                db=db,
-                patient_profile=profile,
+            prediction_result = (
+                prediction_service.predict(
+                    db=db,
+                    patient_profile=profile,
+                )
             )
 
-            # ------------------------------------------------------
-            # 3. EXTRACT PREDICTIONS
-            # ------------------------------------------------------
-
-            health_prediction = prediction_result.get(
-                "health_prediction",
-                {},
+            health_prediction = (
+                prediction_result.get(
+                    "health_prediction",
+                    {},
+                )
             )
 
-            clinical_prediction = prediction_result.get(
-                "clinical_prediction",
-                {},
+            clinical_prediction = (
+                prediction_result.get(
+                    "clinical_prediction",
+                    {},
+                )
             )
 
-            alerts = prediction_result.get(
-                "alerts",
-                [],
+            alerts = (
+                prediction_result.get(
+                    "alerts",
+                    [],
+                )
             )
-
-            # ------------------------------------------------------
-            # 4. REAL-TIME AI LOG
-            # ------------------------------------------------------
 
             print("=" * 70)
             print("REAL-TIME AI PREDICTION")
@@ -174,25 +350,21 @@ class VitalLogService:
             print("=" * 70)
 
             # ------------------------------------------------------
-            # 5. PROCESS EMERGENCY ALERTS
-            # ------------------------------------------------------
+            # IMPORTANT
             #
-            # Existing AlertEngine generates the alerts.
+            # Don't send the same critical notification twice.
             #
-            # EmergencyNotificationService handles:
-            #
-            # WARNING
-            #     ↓
-            # SMS
-            #
-            # CRITICAL
-            #     ↓
-            # SMS + CALL
-            #
-            # Family + Caregiver
+            # If immediate safety already generated a Critical
+            # alert, the AI-generated Critical alert should not
+            # trigger another call.
             # ------------------------------------------------------
 
-            if alerts:
+            immediate_was_sent = any(
+                alert.get("severity") == "Critical"
+                for alert in immediate_alerts
+            )
+
+            if alerts and not immediate_was_sent:
 
                 emergency_notification_service.process_alerts(
                     db=db,
@@ -201,26 +373,27 @@ class VitalLogService:
                     alerts=alerts,
                 )
 
+            elif not alerts:
+
+                print(
+                    "[EMERGENCY] "
+                    "No AI emergency alerts generated."
+                )
+
             else:
 
                 print(
-                    "[EMERGENCY] No emergency alerts generated."
+                    "[EMERGENCY] "
+                    "Critical notification already sent "
+                    "by immediate safety layer."
                 )
 
         except Exception as e:
 
-            # ======================================================
-            # IMPORTANT
-            # ======================================================
-            #
-            # AI / notification failure must NEVER undo the
-            # already-saved vital.
-            #
-            # The vital remains safely stored in the database.
-            # ======================================================
-
             print("=" * 70)
-            print("REAL-TIME AI / EMERGENCY PROCESSING ERROR")
+            print(
+                "REAL-TIME AI / EMERGENCY PROCESSING ERROR"
+            )
             print("=" * 70)
 
             print(
@@ -238,7 +411,7 @@ class VitalLogService:
             print("=" * 70)
 
         # ==========================================================
-        # RETURN ORIGINAL VITAL RESPONSE
+        # RETURN VITAL
         # ==========================================================
 
         return vital
@@ -259,7 +432,8 @@ class VitalLogService:
                 VitalLog.patient_id == patient_id
             )
             .order_by(
-                VitalLog.created_at.desc()
+                VitalLog.created_at.desc(),
+                VitalLog.id.desc(),
             )
             .first()
         )
@@ -280,7 +454,8 @@ class VitalLogService:
                 VitalLog.patient_id == patient_id
             )
             .order_by(
-                VitalLog.created_at.asc()
+                VitalLog.created_at.asc(),
+                VitalLog.id.asc(),
             )
             .all()
         )

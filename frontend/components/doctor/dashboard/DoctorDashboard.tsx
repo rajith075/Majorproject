@@ -16,6 +16,7 @@ import {
   ChevronRight,
   X,
   Clock,
+  Gauge,
 } from "lucide-react";
 
 import { useAuthStore } from "@/store/auth.store";
@@ -26,10 +27,13 @@ import {
   getDoctorMedications,
   prescribeMedication,
   updateDoctorPatientNotes,
+  recordDoctorBloodPressure,
   DoctorPatient,
   DoctorConsultation,
   PrescribedMedication,
   PrescribeMedicationData,
+  getDoctorVitalHistory,
+  DoctorVitalLog,
 } from "@/services/api/doctor";
 
 export default function DoctorDashboard() {
@@ -37,9 +41,17 @@ export default function DoctorDashboard() {
 
   const [patient, setPatient] = useState<DoctorPatient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const [latestVitals, setLatestVitals] = useState<
+    DoctorVitalLog | null
+  >(null);
+  const [loadingVitals, setLoadingVitals] = useState(false);
   const [doctorNotes, setDoctorNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesMessage, setNotesMessage] = useState("");
+  const [systolicPressure, setSystolicPressure] = useState("");
+  const [diastolicPressure, setDiastolicPressure] = useState("");
+  const [savingBloodPressure, setSavingBloodPressure] = useState(false);
+  const [bloodPressureMessage, setBloodPressureMessage] = useState("");
 
   const [consultations, setConsultations] = useState<
     DoctorConsultation[]
@@ -100,6 +112,36 @@ export default function DoctorDashboard() {
     loadPatient();
   }, []);
 
+  // The doctor reads the same patient vital-log stream shown to the
+  // linked family member and caregiver.
+  useEffect(() => {
+    if (!patient?.id) {
+      return;
+    }
+
+    const loadLatestVitals = async () => {
+      try {
+        setLoadingVitals(true);
+
+        const vitals = await getDoctorVitalHistory(patient.id);
+        const latest = [...vitals].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        )[0];
+
+        setLatestVitals(latest ?? null);
+      } catch (error) {
+        console.error("Failed to load patient vitals:", error);
+        setLatestVitals(null);
+      } finally {
+        setLoadingVitals(false);
+      }
+    };
+
+    loadLatestVitals();
+  }, [patient?.id]);
+
   // =====================================================
   // SAVE DOCTOR NOTES
   // =====================================================
@@ -124,6 +166,60 @@ export default function DoctorDashboard() {
       setNotesMessage("Unable to save notes. Please try again.");
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  const handleSaveBloodPressure = async () => {
+    if (!patient) {
+      setBloodPressureMessage(
+        "No patient is currently assigned to this doctor."
+      );
+      return;
+    }
+
+    const systolic = Number(systolicPressure);
+    const diastolic = Number(diastolicPressure);
+
+    if (
+      !Number.isFinite(systolic) ||
+      !Number.isFinite(diastolic) ||
+      systolic <= 0 ||
+      diastolic <= 0 ||
+      diastolic >= systolic
+    ) {
+      setBloodPressureMessage(
+        "Enter valid readings with systolic pressure higher than diastolic pressure."
+      );
+      return;
+    }
+
+    try {
+      setSavingBloodPressure(true);
+      setBloodPressureMessage("");
+
+      const vital = await recordDoctorBloodPressure({
+        systolic_bp: systolic,
+        diastolic_bp: diastolic,
+      });
+
+      setLatestVitals(vital);
+      setSystolicPressure("");
+      setDiastolicPressure("");
+      setPatient({
+        ...patient,
+        last_systolic_bp: vital.systolic_bp,
+        last_diastolic_bp: vital.diastolic_bp,
+      });
+      setBloodPressureMessage(
+        "Blood pressure saved and shared with the care team."
+      );
+    } catch (error) {
+      console.error("Failed to save blood pressure:", error);
+      setBloodPressureMessage(
+        "Unable to save blood pressure. Please try again."
+      );
+    } finally {
+      setSavingBloodPressure(false);
     }
   };
 
@@ -634,6 +730,77 @@ export default function DoctorDashboard() {
           )}
         </section>
 
+        {/* ================= BLOOD PRESSURE ================= */}
+
+        <section className="rounded-3xl border border-rose-100 bg-white p-6 shadow-sm lg:p-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50">
+                <Gauge className="h-6 w-6 text-rose-600" />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Blood Pressure
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Latest shared reading from the patient&apos;s family and caregiver vital record.
+                </p>
+              </div>
+            </div>
+
+            {latestVitals?.created_at && (
+              <p className="text-sm text-slate-400">
+                Recorded {new Date(latestVitals.created_at).toLocaleString("en-IN")}
+              </p>
+            )}
+          </div>
+
+          {loadingVitals ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+              <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+            </div>
+          ) : !latestVitals ? (
+            <p className="mt-6 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500">
+              No blood-pressure reading has been recorded for this patient yet.
+            </p>
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-5">
+                <p className="text-sm font-medium text-rose-700">
+                  Systolic Pressure
+                </p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {latestVitals.systolic_bp ?? "—"}
+                  <span className="ml-2 text-sm font-medium text-slate-500">
+                    mmHg
+                  </span>
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Upper number when the heart contracts.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+                <p className="text-sm font-medium text-blue-700">
+                  Diastolic Pressure
+                </p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {latestVitals.diastolic_bp ?? "—"}
+                  <span className="ml-2 text-sm font-medium text-slate-500">
+                    mmHg
+                  </span>
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Lower number when the heart relaxes.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* ================= PATIENT OVERVIEW ================= */}
 
         <section>
@@ -1013,6 +1180,91 @@ export default function DoctorDashboard() {
                 </div>
               )}
             </div>
+          </div>
+        </section>
+
+        {/* ================= RECORD BLOOD PRESSURE ================= */}
+
+        <section className="rounded-3xl border border-rose-100 bg-white p-6 shadow-sm lg:p-8">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-50">
+              <Gauge className="h-6 w-6 text-rose-600" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">
+                Record Blood Pressure
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Add the patient&apos;s systolic and diastolic readings. This is shared with family and caregivers in their vitals view.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">
+                Systolic pressure
+              </span>
+              <span className="ml-2 text-xs text-slate-400">mmHg</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="1"
+                max="300"
+                placeholder="e.g. 120"
+                value={systolicPressure}
+                onChange={(event) => {
+                  setSystolicPressure(event.target.value);
+                  setBloodPressureMessage("");
+                }}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-semibold text-slate-700">
+                Diastolic pressure
+              </span>
+              <span className="ml-2 text-xs text-slate-400">mmHg</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="1"
+                max="200"
+                placeholder="e.g. 80"
+                value={diastolicPressure}
+                onChange={(event) => {
+                  setDiastolicPressure(event.target.value);
+                  setBloodPressureMessage("");
+                }}
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <p
+              aria-live="polite"
+              className={`text-sm ${
+                bloodPressureMessage ===
+                "Blood pressure saved and shared with the care team."
+                  ? "text-emerald-600"
+                  : "text-red-600"
+              }`}
+            >
+              {bloodPressureMessage}
+            </p>
+
+            <button
+              type="button"
+              onClick={handleSaveBloodPressure}
+              disabled={savingBloodPressure || !patient}
+              className="rounded-xl bg-rose-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {savingBloodPressure ? "Saving..." : "Save Blood Pressure"}
+            </button>
           </div>
         </section>
 

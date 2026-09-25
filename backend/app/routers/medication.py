@@ -12,6 +12,7 @@ from app.schemas.medication import (
     MedicationStatusResponse,
 )
 from app.services.medication import MedicationService
+from app.models.doctor_patient import DoctorPatient
 
 
 router = APIRouter(
@@ -240,9 +241,11 @@ def create_medication(
         evening=request.evening,
         night=request.night,
     )
+
+
 # ==========================================================
 # Get Patient Medication History
-# Doctor → assigned patient only
+# Doctor → linked patient only
 # Includes current + previous medications
 # ==========================================================
 
@@ -266,14 +269,33 @@ def get_doctor_patient_medications(
         )
 
     # ------------------------------------------------------
-    # Verify patient exists and is assigned to this doctor
+    # Verify Doctor ↔ Patient relationship
+    # ------------------------------------------------------
+
+    doctor_patient = (
+        db.query(DoctorPatient)
+        .filter(
+            DoctorPatient.doctor_id == current_user.id,
+            DoctorPatient.patient_id == patient_id,
+            DoctorPatient.status == "active",
+        )
+        .first()
+    )
+
+    if not doctor_patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient is not linked to this doctor.",
+        )
+
+    # ------------------------------------------------------
+    # Verify patient exists
     # ------------------------------------------------------
 
     patient = (
         db.query(Patient)
         .filter(
             Patient.id == patient_id,
-            Patient.doctor_id == current_user.id,
         )
         .first()
     )
@@ -281,7 +303,7 @@ def get_doctor_patient_medications(
     if not patient:
         raise HTTPException(
             status_code=404,
-            detail="Patient is not assigned to this doctor.",
+            detail="Patient not found.",
         )
 
     # ------------------------------------------------------
@@ -290,7 +312,7 @@ def get_doctor_patient_medications(
     # active=True  → Current medication
     # active=False → Previous medication
     #
-    # We intentionally keep previous records.
+    # Previous medication records are intentionally preserved.
     # ------------------------------------------------------
 
     medications = (

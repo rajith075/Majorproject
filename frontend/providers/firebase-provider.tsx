@@ -16,49 +16,67 @@ export function FirebaseProvider({
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
-    // 🔊 Unlock browser audio after the user interacts with the page
-    const unlockAudio = () => {
-      const audio = new Audio(
-        "/sounds/emergency-alert.mp3"
-      );
+    // 🔊 Create ONE persistent audio element
+    // instead of creating a new Audio object for every alert.
+    const alertAudio = new Audio("/sounds/emergency-alert.mp3");
 
-      audio.volume = 0;
+    alertAudio.preload = "auto";
+    alertAudio.volume = 1.0;
 
-      audio
-        .play()
-        .then(() => {
-          audio.pause();
-          audio.currentTime = 0;
+    // Start loading the sound immediately.
+    alertAudio.load();
 
-          console.log("[FCM] Alert sound unlocked.");
-        })
-        .catch((error) => {
-          console.warn(
-            "[FCM] Audio unlock failed:",
-            error
-          );
-        });
+    // 🔓 Unlock audio after the first user interaction.
+    const unlockAudio = async () => {
+      try {
+        alertAudio.volume = 0;
 
-      window.removeEventListener(
-        "click",
-        unlockAudio
-      );
+        await alertAudio.play();
 
-      window.removeEventListener(
-        "keydown",
-        unlockAudio
-      );
+        alertAudio.pause();
+        alertAudio.currentTime = 0;
+        alertAudio.volume = 1.0;
+
+        console.log("[FCM] Alert audio unlocked and preloaded.");
+      } catch (error) {
+        console.warn("[FCM] Audio unlock failed:", error);
+      }
+
+      window.removeEventListener("click", unlockAudio);
+      window.removeEventListener("keydown", unlockAudio);
+      window.removeEventListener("touchstart", unlockAudio);
     };
 
-    window.addEventListener(
-      "click",
-      unlockAudio
-    );
+    window.addEventListener("click", unlockAudio);
+    window.addEventListener("keydown", unlockAudio);
+    window.addEventListener("touchstart", unlockAudio);
 
-    window.addEventListener(
-      "keydown",
-      unlockAudio
-    );
+    const playEmergencySound = () => {
+      console.log("[FCM] 🔊 Playing emergency sound NOW");
+
+      try {
+        // Restart the existing audio element immediately.
+        alertAudio.pause();
+        alertAudio.currentTime = 0;
+        alertAudio.volume = 1.0;
+
+        const playPromise = alertAudio.play();
+
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.warn(
+              "[FCM] Could not play alert sound:",
+              error
+            );
+          });
+        }
+      } catch (error) {
+        console.error(
+          "[FCM] Emergency sound error:",
+          error
+        );
+      }
+    };
 
     const initializeFirebaseMessaging = async () => {
       console.log(
@@ -71,11 +89,6 @@ export function FirebaseProvider({
       if (token) {
         console.log(
           "[FCM] TOKEN SUCCESSFULLY OBTAINED"
-        );
-
-        console.log(
-          "[FCM] Token:",
-          token
         );
 
         localStorage.setItem(
@@ -92,40 +105,39 @@ export function FirebaseProvider({
         await listenForForegroundMessages(
           (payload: any) => {
             console.log(
-              "[FCM] Foreground notification:",
+              "[FCM] ⚡ Foreground notification received:",
               payload
             );
 
+            // 🔊 FIRST: play sound immediately
+            playEmergencySound();
+
             const title =
               payload?.notification?.title ||
+              payload?.data?.title ||
               "ElderCare Alert";
 
             const body =
               payload?.notification?.body ||
+              payload?.data?.body ||
               "A health alert requires your attention.";
 
+            // Then show browser notification.
             if (
               typeof window !== "undefined" &&
               "Notification" in window &&
               Notification.permission === "granted"
             ) {
-              new Notification(title, {
-                body,
-              });
-
-              // 🔊 Play ElderCare alert sound
-              const audio = new Audio(
-                "/sounds/emergency-alert.mp3"
-              );
-
-              audio.volume = 1.0;
-
-              audio.play().catch((error) => {
+              try {
+                new Notification(title, {
+                  body,
+                });
+              } catch (error) {
                 console.warn(
-                  "[FCM] Could not play alert sound:",
+                  "[FCM] Browser notification failed:",
                   error
                 );
-              });
+              }
             }
           }
         );
@@ -138,6 +150,9 @@ export function FirebaseProvider({
         unsubscribe();
       }
 
+      alertAudio.pause();
+      alertAudio.src = "";
+
       window.removeEventListener(
         "click",
         unlockAudio
@@ -145,6 +160,11 @@ export function FirebaseProvider({
 
       window.removeEventListener(
         "keydown",
+        unlockAudio
+      );
+
+      window.removeEventListener(
+        "touchstart",
         unlockAudio
       );
     };

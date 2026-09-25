@@ -34,7 +34,10 @@ from app.schemas.consultation import (
     ConsultationStatusUpdate,
 )
 from app.schemas.patient import PatientNotesUpdate
+from app.schemas.vital_log import DoctorBloodPressureCreate
 from app.services.auth_service import AuthService
+from app.models.doctor_patient import DoctorPatient
+from app.models.vital_log import VitalLog
 
 
 router = APIRouter(
@@ -339,7 +342,7 @@ def get_doctor_verification_status(
 
 
 # ==========================================================
-# Doctor Assigned Patient
+# Doctor Patient
 # ==========================================================
 
 @router.get("/patient")
@@ -353,10 +356,25 @@ def get_doctor_patient(
             detail="Doctor access required",
         )
 
+    doctor_patient = (
+        db.query(DoctorPatient)
+        .filter(
+            DoctorPatient.doctor_id == current_user.id,
+            DoctorPatient.status == "active",
+        )
+        .order_by(
+            DoctorPatient.created_at.desc()
+        )
+        .first()
+    )
+
+    if not doctor_patient:
+        return None
+
     patient = (
         db.query(Patient)
         .filter(
-            Patient.doctor_id == current_user.id
+            Patient.id == doctor_patient.patient_id
         )
         .first()
     )
@@ -434,6 +452,84 @@ def update_doctor_patient_notes(
     db.refresh(patient)
 
     return {"notes": patient.notes}
+
+
+# ==========================================================
+# Record Blood Pressure for Assigned Patient
+# ==========================================================
+
+@router.post("/patient/blood-pressure")
+def record_doctor_blood_pressure(
+    request: DoctorBloodPressureCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "doctor":
+        raise HTTPException(
+            status_code=403,
+            detail="Doctor access required",
+        )
+
+    doctor_patient = (
+        db.query(DoctorPatient)
+        .filter(
+            DoctorPatient.doctor_id == current_user.id,
+            DoctorPatient.status == "active",
+        )
+        .order_by(DoctorPatient.created_at.desc())
+        .first()
+    )
+
+    if not doctor_patient:
+        raise HTTPException(
+            status_code=404,
+            detail="No patient is assigned to this doctor",
+        )
+
+    patient = (
+        db.query(Patient)
+        .filter(Patient.id == doctor_patient.patient_id)
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found",
+        )
+
+    # Create a new shared vital snapshot. Copying the prior non-BP values
+    # prevents the doctor's BP entry from replacing the rest of the latest
+    # family/caregiver vital display with blank values.
+    latest_vital = (
+        db.query(VitalLog)
+        .filter(VitalLog.patient_id == patient.id)
+        .order_by(VitalLog.created_at.desc(), VitalLog.id.desc())
+        .first()
+    )
+
+    vital = VitalLog(
+        patient_id=patient.id,
+        heart_rate=latest_vital.heart_rate if latest_vital else None,
+        systolic_bp=request.systolic_bp,
+        diastolic_bp=request.diastolic_bp,
+        spo2=latest_vital.spo2 if latest_vital else None,
+        temperature=latest_vital.temperature if latest_vital else None,
+        respiratory_rate=(
+            latest_vital.respiratory_rate if latest_vital else None
+        ),
+        sleep_hours=latest_vital.sleep_hours if latest_vital else None,
+        activity_steps=latest_vital.activity_steps if latest_vital else None,
+    )
+
+    patient.last_systolic_bp = request.systolic_bp
+    patient.last_diastolic_bp = request.diastolic_bp
+
+    db.add(vital)
+    db.commit()
+    db.refresh(vital)
+
+    return vital
 
 
 # ==========================================================
@@ -1130,6 +1226,32 @@ def book_consultation(
     )
 
     db.add(consultation)
+
+    # ------------------------------------------------------
+    # Create Doctor ↔ Patient relationship
+    # ------------------------------------------------------
+
+    doctor_patient = (
+        db.query(DoctorPatient)
+        .filter(
+            DoctorPatient.doctor_id == doctor.id,
+            DoctorPatient.patient_id == patient.id,
+        )
+        .first()
+    )
+
+    if doctor_patient is None:
+        doctor_patient = DoctorPatient(
+            doctor_id=doctor.id,
+            patient_id=patient.id,
+            status="active",
+        )
+
+        db.add(doctor_patient)
+
+    else:
+        doctor_patient.status = "active"
+
     db.commit()
     db.refresh(consultation)
 

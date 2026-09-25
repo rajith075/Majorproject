@@ -114,6 +114,22 @@ export const updateDoctorPatientNotes = async (
   return response.data;
 };
 
+export interface DoctorBloodPressureData {
+  systolic_bp: number;
+  diastolic_bp: number;
+}
+
+export const recordDoctorBloodPressure = async (
+  data: DoctorBloodPressureData
+): Promise<DoctorVitalLog> => {
+  const response = await API.post(
+    "/doctor/patient/blood-pressure",
+    data
+  );
+
+  return response.data;
+};
+
 // =====================================================
 // DOCTOR CONSULTATION
 // =====================================================

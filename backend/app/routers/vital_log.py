@@ -6,6 +6,7 @@ from app.core.dependencies import get_current_user
 
 from app.models.user import User
 from app.models.patient import Patient
+from app.models.doctor_patient import DoctorPatient
 
 from app.schemas.vital_log import (
     VitalLogCreate,
@@ -37,6 +38,12 @@ def get_my_latest_vitals(
     current_user: User = Depends(get_current_user),
 ):
 
+    if current_user.role != "family":
+        raise HTTPException(
+            status_code=403,
+            detail="Family member access required.",
+        )
+
     patient = (
         db.query(Patient)
         .filter(
@@ -58,9 +65,51 @@ def get_my_latest_vitals(
 
 
 # ==========================================================
-# DOCTOR
-# Get complete vital history for assigned patient
+# Doctor → Patient Vital History
+# Uses Doctor ↔ Patient relationship
 # ==========================================================
+
+# ==========================================================
+# CAREGIVER
+# Get the latest shared vital record for a patient assigned to
+# the logged-in caregiver.
+# ==========================================================
+
+@router.get(
+    "/caregiver/patient/{patient_id}/latest",
+    response_model=VitalLogResponse | None,
+)
+def get_caregiver_latest_vitals(
+    patient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != "caregiver":
+        raise HTTPException(
+            status_code=403,
+            detail="Caregiver access required.",
+        )
+
+    patient = (
+        db.query(Patient)
+        .filter(
+            Patient.id == patient_id,
+            Patient.caregiver_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient is not assigned to this caregiver.",
+        )
+
+    return vital_log_service.get_latest_vitals(
+        db=db,
+        patient_id=patient.id,
+    )
+
 
 @router.get(
     "/doctor/patient/{patient_id}/history",
@@ -70,9 +119,8 @@ def get_doctor_vital_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     # ------------------------------------------------------
-    # Doctor access only
+    # Only doctors can access this endpoint
     # ------------------------------------------------------
 
     if current_user.role != "doctor":
@@ -82,14 +130,33 @@ def get_doctor_vital_history(
         )
 
     # ------------------------------------------------------
-    # Verify patient belongs to this doctor
+    # Verify Doctor ↔ Patient relationship
+    # ------------------------------------------------------
+
+    doctor_patient = (
+        db.query(DoctorPatient)
+        .filter(
+            DoctorPatient.doctor_id == current_user.id,
+            DoctorPatient.patient_id == patient_id,
+            DoctorPatient.status == "active",
+        )
+        .first()
+    )
+
+    if not doctor_patient:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient is not linked to this doctor.",
+        )
+
+    # ------------------------------------------------------
+    # Verify patient exists
     # ------------------------------------------------------
 
     patient = (
         db.query(Patient)
         .filter(
             Patient.id == patient_id,
-            Patient.doctor_id == current_user.id,
         )
         .first()
     )
@@ -97,11 +164,11 @@ def get_doctor_vital_history(
     if not patient:
         raise HTTPException(
             status_code=404,
-            detail="Patient is not assigned to this doctor.",
+            detail="Patient not found.",
         )
 
     # ------------------------------------------------------
-    # Return complete vital history
+    # Get vital history
     # ------------------------------------------------------
 
     return vital_log_service.get_vital_history(

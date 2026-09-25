@@ -3,6 +3,7 @@
 import DashboardHeader from "@/components/dashboard/dashboard-header";
 import OverviewSection from "@/components/dashboard/OverviewSection";
 import HealthScoreTrend from "@/components/dashboard/HealthScoreTrend";
+import HealthSection from "@/components/dashboard/health/HealthSection";
 
 import FamilyDashboard from "@/components/family/dashboard/FamilyDashboard";
 import DoctorDashboard from "@/components/doctor/dashboard/DoctorDashboard";
@@ -112,6 +113,8 @@ export default function DashboardPage() {
         <DashboardHeader />
 
         <OverviewSection />
+
+        <HealthSection />
 
         <HealthScoreTrend />
 

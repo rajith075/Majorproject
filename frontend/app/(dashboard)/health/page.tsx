@@ -1,8 +1,7 @@
 "use client";
 import { Activity } from "lucide-react";
 
-import VitalCard from "@/components/dashboard/health/VitalCard";
-import { healthMetrics } from "@/constants/mock/health";
+import HealthSection from "@/components/dashboard/health/HealthSection";
 
 export default function HealthPage() {
   return (
@@ -37,43 +36,7 @@ export default function HealthPage() {
 
       </section>
 
-      {/* Current Vitals */}
-
-      <section className="space-y-6">
-
-        <div>
-
-          <h2 className="text-2xl font-semibold text-slate-900">
-
-            Current Vital Signs
-
-          </h2>
-
-          <p className="mt-1 text-sm text-slate-500">
-
-            Latest physiological measurements from connected health devices.
-
-          </p>
-
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-
-          {healthMetrics.map((metric) => (
-
-            <VitalCard
-
-              key={metric.id}
-
-              metric={metric}
-
-            />
-
-          ))}
-
-        </div>
-
-      </section>
+      <HealthSection />
 
     </main>
   );

@@ -37,6 +37,7 @@ from app.models.emergency_contact import EmergencyContact
 from app.models.vital_log import VitalLog
 from app.models.prediction_history import PredictionHistory
 from app.models.doctor_verification import DoctorVerification
+from app.models.doctor_patient import DoctorPatient
 
 # ==========================================================
 # FastAPI App

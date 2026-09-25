@@ -7,7 +7,7 @@ importScripts(
 );
 
 firebase.initializeApp({
-  apiKey: "AIzaSyBSbB801SHhuSKn5qme1DIFFC6zU97YrY8",
+  apiKey: "AIzaSyBSbB801SHhuSK5nqme1DIFFC6zU97YrY8",
   authDomain: "elderlycare-9258a.firebaseapp.com",
   projectId: "elderlycare-9258a",
   storageBucket: "elderlycare-9258a.firebasestorage.app",
@@ -21,26 +21,18 @@ messaging.onBackgroundMessage((payload) => {
   console.log("[FCM] Background message received:", payload);
 
   const title =
-    payload?.notification?.title || "ElderCare Alert";
+    payload?.notification?.title ||
+    payload?.data?.title ||
+    "ElderCare Alert";
 
   const body =
     payload?.notification?.body ||
+    payload?.data?.body ||
     "A health alert requires your attention.";
 
-  console.log("[FCM] Showing notification:", title, body);
-
-  self.registration
-    .showNotification(title, {
-      body: body,
-      data: payload?.data || {},
-    })
-    .then(() => {
-      console.log("[FCM] Notification displayed successfully.");
-    })
-    .catch((error) => {
-      console.error(
-        "[FCM] Failed to display notification:",
-        error
-      );
-    });
+  // Show notification immediately
+  self.registration.showNotification(title, {
+    body,
+    data: payload?.data || {},
+  });
 });
