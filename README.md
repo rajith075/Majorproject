@@ -6,6 +6,8 @@ ElderlyCare is a full-stack healthcare monitoring platform for remotely monitori
 
 Status: Academic/major-project prototype. The web application, database-backed clinical workflows, AI/ML pipeline, notification system, and Arduino sensor prototype are under active development/integration.
 
+Android app: The Flutter project is in `mobile/`. Open that directory in Android Studio. See `mobile/README.md` for setup, API connection, build instructions, and current integration limits.
+
 Features
 
 Role-based Family, Caregiver and Doctor dashboards
