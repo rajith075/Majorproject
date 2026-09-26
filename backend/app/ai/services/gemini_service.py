@@ -48,9 +48,17 @@ class GeminiService:
         # Models
         # --------------------------------------------------
 
-        self.primary_model = "gemini-3-flash-preview"
+        self.primary_model = os.getenv(
+            "GEMINI_PRIMARY_MODEL",
+            "gemini-3-flash-preview",
+        )
 
-        self.fallback_model = "gemini-2.5-flash"
+        # gemini-2.5-flash is retired for new projects. The Gemini API itself
+        # recommends gemini-3.8-flash as the supported replacement.
+        self.fallback_model = os.getenv(
+            "GEMINI_FALLBACK_MODEL",
+            "gemini-3.8-flash",
+        )
 
         print("[OK] Gemini Service Loaded")
         print(
@@ -129,7 +137,7 @@ class GeminiService:
         try:
 
             print(
-                f"🤖 Trying Gemini model: "
+                f"[GEMINI] Trying model: "
                 f"{self.primary_model}"
             )
 
@@ -141,7 +149,7 @@ class GeminiService:
         except Exception as primary_error:
 
             print(
-                "⚠️ Primary Gemini model failed."
+                "[GEMINI] Primary model failed."
             )
 
             print(
@@ -155,7 +163,7 @@ class GeminiService:
         try:
 
             print(
-                f"🔄 Trying fallback Gemini model: "
+                f"[GEMINI] Trying fallback model: "
                 f"{self.fallback_model}"
             )
 
@@ -167,7 +175,7 @@ class GeminiService:
         except Exception as fallback_error:
 
             print(
-                "❌ Fallback Gemini model also failed."
+                "[GEMINI] Fallback model also failed."
             )
 
             print(
@@ -179,6 +187,8 @@ class GeminiService:
         # ==================================================
 
         return {
+
+            "status": "unavailable",
 
             "summary": (
                 "The AI explanation service is "

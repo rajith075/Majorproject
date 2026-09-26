@@ -226,6 +226,18 @@ Return ONLY valid JSON in exactly this structure:
             )
         )
 
+        # Gemini is optional. Let the dashboard fall back to the deterministic
+        # prediction summary when the external explanation service is offline.
+        if isinstance(response, dict) and response.get("status") == "unavailable":
+            return {
+                "status": "unavailable",
+                "summary": "",
+                "key_factors": [],
+                "caregiver_guidance": [],
+                "disclaimer": response.get("disclaimer", ""),
+                "sources": [],
+            }
+
         # ==================================================
         # Ensure Structured Response
         # ==================================================

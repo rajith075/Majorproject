@@ -19,6 +19,8 @@ import {
 } from "@/services/api/vitals";
 import type { HealthMetric, HealthStatus } from "@/types/health";
 
+const LIVE_READING_WINDOW_MS = 15_000;
+
 function bloodPressureStatus(
   systolic: number | null,
   diastolic: number | null
@@ -33,11 +35,20 @@ export default function HealthSection() {
   const patient = usePatientStore((state) => state.patient);
   const [vitals, setVitals] = useState<VitalLog | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkedAt, setCheckedAt] = useState(() => Date.now());
 
   useEffect(() => {
-    const loadVitals = async () => {
+    let cancelled = false;
+    let requestInFlight = false;
+
+    const loadVitals = async (isInitialLoad = false) => {
+      if (requestInFlight) return;
+
+      requestInFlight = true;
+
       try {
-        setLoading(true);
+        if (isInitialLoad) setLoading(true);
+
         const data =
           user?.role === "caregiver" && patient?.id
             ? await getCaregiverLatestVitals(patient.id)
@@ -45,16 +56,28 @@ export default function HealthSection() {
             ? await getMyLatestVitals()
             : null;
 
-        setVitals(data);
+        if (!cancelled) {
+          setVitals(data);
+          setCheckedAt(Date.now());
+        }
       } catch (error) {
         console.error("Failed to load linked patient vitals:", error);
-        setVitals(null);
+        // Keep the most recent successful reading visible during a temporary
+        // network failure; only the initial request should show an empty state.
+        if (!cancelled && isInitialLoad) setVitals(null);
       } finally {
-        setLoading(false);
+        requestInFlight = false;
+        if (!cancelled && isInitialLoad) setLoading(false);
       }
     };
 
-    loadVitals();
+    void loadVitals(true);
+    const interval = window.setInterval(() => void loadVitals(), 5_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, [patient?.id, user?.role]);
 
   const metrics = useMemo<HealthMetric[]>(() => {
@@ -72,14 +95,6 @@ export default function HealthSection() {
         value: vitals.heart_rate ?? "—", unit: "BPM", status: "normal", trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "rose", chartType: "line", history: [],
       },
       {
-        id: "systolic-pressure", title: "Systolic Pressure", description: "Upper blood pressure reading", icon: Gauge,
-        value: vitals.systolic_bp ?? "—", unit: "mmHg", status: pressureStatus, trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "violet", chartType: "bars", history: [],
-      },
-      {
-        id: "diastolic-pressure", title: "Diastolic Pressure", description: "Lower blood pressure reading", icon: Gauge,
-        value: vitals.diastolic_bp ?? "—", unit: "mmHg", status: pressureStatus, trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "sky", chartType: "bars", history: [],
-      },
-      {
         id: "spo2", title: "SpO₂", description: "Latest oxygen saturation", icon: Activity,
         value: vitals.spo2 ?? "—", unit: "%", status: "normal", trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "cyan", chartType: "progress", history: [],
       },
@@ -88,11 +103,23 @@ export default function HealthSection() {
         value: vitals.temperature ?? "—", unit: "°C", status: "normal", trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "amber", chartType: "bars", history: [],
       },
       {
+        id: "systolic-pressure", title: "Systolic Pressure", description: "Upper blood pressure reading", icon: Gauge,
+        value: vitals.systolic_bp ?? "—", unit: "mmHg", status: pressureStatus, trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "violet", chartType: "bars", history: [],
+      },
+      {
+        id: "diastolic-pressure", title: "Diastolic Pressure", description: "Lower blood pressure reading", icon: Gauge,
+        value: vitals.diastolic_bp ?? "—", unit: "mmHg", status: pressureStatus, trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "sky", chartType: "bars", history: [],
+      },
+      {
         id: "respiration", title: "Respiration", description: "Latest breathing rate", icon: Wind,
         value: vitals.respiratory_rate ?? "—", unit: "/min", status: "normal", trend: 0, trendDirection: "stable", lastUpdated: updatedAt, color: "emerald", chartType: "line", history: [],
       },
     ];
   }, [vitals]);
+
+  const isLive = Boolean(
+    vitals && new Date(vitals.created_at).getTime() > checkedAt - LIVE_READING_WINDOW_MS
+  );
 
   return (
     <section className="space-y-6">
@@ -101,7 +128,9 @@ export default function HealthSection() {
           Patient Vitals
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Live readings for your linked patient, including separate systolic and diastolic blood pressure values.
+          {isLive
+            ? "Live Arduino readings for your linked patient."
+            : "Last recorded vitals. Waiting for the next Arduino reading."}
         </p>
       </div>
 

@@ -1,7 +1,9 @@
 import os
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from app.db.database import SessionLocal
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.vital_log import VitalLog
@@ -15,11 +17,47 @@ from app.services.notification_service import notification_service
 class EmergencyNotificationService:
 
     @staticmethod
+    def _is_duplicate_alert_within_cooldown(
+        db: Session,
+        patient_id: int,
+        event_type: str,
+        cooldown_seconds: int | None = None,
+    ) -> bool:
+        """Avoid repeatedly notifying a care team about the same alert.
+
+        Sensor readings can arrive every few seconds.  A persistent condition
+        must remain visible in the dashboard, but it must not produce a push
+        notification for every reading.
+        """
+        if cooldown_seconds is None:
+            cooldown_seconds = max(
+                0,
+                int(os.getenv("EMERGENCY_ALERT_COOLDOWN_SECONDS", "900")),
+            )
+        if cooldown_seconds == 0:
+            return False
+
+        cutoff = datetime.now(timezone.utc) - timedelta(
+            seconds=cooldown_seconds
+        )
+        recent_duplicate = (
+            db.query(EmergencyAlert.id)
+            .filter(
+                EmergencyAlert.patient_id == patient_id,
+                EmergencyAlert.event_type == event_type,
+                EmergencyAlert.detected_at >= cutoff,
+            )
+            .first()
+        )
+        return recent_duplicate is not None
+
+    @staticmethod
     def process_alerts(
         db: Session,
         patient: Patient,
         vital: VitalLog,
-        alerts
+        alerts,
+        cooldown_seconds: int | None = 0,
     ):
 
         # =====================================================
@@ -120,6 +158,21 @@ class EmergencyNotificationService:
                 f"{severity} - {title}"
             )
 
+            return
+
+        # Manual/backend alerts must be delivered immediately. Sensor vitals
+        # never call this path, and the Arduino bridge debounces fall signals
+        # before submitting them, so a global alert cooldown is unnecessary.
+        if EmergencyNotificationService._is_duplicate_alert_within_cooldown(
+            db=db,
+            patient_id=patient.id,
+            event_type=title,
+            cooldown_seconds=cooldown_seconds,
+        ):
+            print(
+                "[EMERGENCY] Duplicate alert notification suppressed: "
+                f"{title} (cooldown active)."
+            )
             return
 
         # =====================================================
@@ -341,6 +394,44 @@ class EmergencyNotificationService:
         )
 
         print("=" * 70)
+
+    @staticmethod
+    def process_fall_alert(patient_id: int, vital_id: int) -> None:
+        """Create the one emergency path used by an Arduino fall event."""
+        db = SessionLocal()
+        try:
+            patient = db.get(Patient, patient_id)
+            vital = db.get(VitalLog, vital_id)
+            if not patient or not vital:
+                print(
+                    "[FALL ALERT] Missing patient or vital: "
+                    f"{patient_id}/{vital_id}"
+                )
+                return
+
+            EmergencyNotificationService.process_alerts(
+                db=db,
+                patient=patient,
+                vital=vital,
+                alerts=[
+                    {
+                        "severity": "Critical",
+                        "title": "Fall Detected",
+                        "message": (
+                            "The Arduino fall sensor detected a fall. "
+                            "Please check on the patient immediately."
+                        ),
+                    }
+                ],
+                # The bridge reports only when the sensor changes from clear
+                # to detected, so each distinct fall must be delivered.
+                cooldown_seconds=0,
+            )
+        except Exception as error:
+            db.rollback()
+            print(f"[FALL ALERT] Notification processing failed: {error}")
+        finally:
+            db.close()
 
 
 emergency_notification_service = (

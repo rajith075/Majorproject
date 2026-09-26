@@ -20,6 +20,8 @@ import {
   getPatientEmergencyAlerts,
   EmergencyAlert,
 } from "@/services/api/emergency";
+import { attachCurrentLocationToEmergency } from "@/lib/emergency-location";
+import { EMERGENCY_ALERT_EVENT } from "@/lib/emergency-alert";
 
 import { usePatientStore } from "@/store/patient-store";
 
@@ -32,19 +34,24 @@ export default function AlertsPage() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] =
     useState<number | null>(null);
+  const [locationSaving, setLocationSaving] =
+    useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // ==========================================================
   // LOAD ALERTS
   // ==========================================================
 
-  const loadAlerts = async () => {
+  const loadAlerts = async (showLoading = false) => {
     if (!patient?.id) {
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
 
       console.log(
         "🚨 LOADING EMERGENCY ALERTS FOR PATIENT:",
@@ -66,13 +73,15 @@ export default function AlertsPage() {
         error
       );
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
   // ==========================================================
-  // LOAD WHEN PATIENT AVAILABLE, THEN POLL EVERY 3 SECONDS
-  // SO A NEW SOS SHOWS UP WITHOUT A MANUAL REFRESH
+  // Load once, then refresh only when Firebase reports a genuine emergency.
+  // Timer polling made the caregiver page visibly re-render repeatedly.
   // ==========================================================
 
   useEffect(() => {
@@ -81,13 +90,19 @@ export default function AlertsPage() {
       return;
     }
 
-    loadAlerts();
+    loadAlerts(true);
 
-    const interval = setInterval(() => {
-      loadAlerts();
-    }, 3000);
+    const refreshAfterEmergency = () => {
+      void loadAlerts();
+    };
+    window.addEventListener(EMERGENCY_ALERT_EVENT, refreshAfterEmergency);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.removeEventListener(
+        EMERGENCY_ALERT_EVENT,
+        refreshAfterEmergency
+      );
+    };
   }, [patient?.id]);
 
   // ==========================================================
@@ -154,6 +169,25 @@ export default function AlertsPage() {
     }
   };
 
+  // Requesting location from this button keeps the browser permission flow
+  // explicit and refreshes the card as soon as coordinates are saved.
+  const handleAttachCurrentLocation = async (alertId: number) => {
+    try {
+      setLocationSaving(alertId);
+      setLocationError(null);
+
+      await attachCurrentLocationToEmergency(alertId);
+      await loadAlerts();
+    } catch (error) {
+      console.error("FAILED TO ATTACH EMERGENCY LOCATION:", error);
+      setLocationError(
+        "Could not get this laptop's location. Allow location access and try again."
+      );
+    } finally {
+      setLocationSaving(null);
+    }
+  };
+
   // ==========================================================
   // LOADING
   // ==========================================================
@@ -181,7 +215,10 @@ export default function AlertsPage() {
   const activeAlerts = alerts.filter(
     (alert) =>
       alert.status === "DETECTED" ||
-      alert.status === "SOS_PENDING"
+      alert.status === "SOS_PENDING" ||
+      alert.status === "CRITICAL" ||
+      alert.status === "WARNING" ||
+      alert.status === "ACTIVE"
   );
 
   const historyAlerts = alerts.filter(
@@ -370,6 +407,7 @@ export default function AlertsPage() {
                         <h3 className="text-xl font-bold text-slate-900">
 
                           {alert.event_type === "FALL"
+                          || alert.event_type === "Fall Detected"
                             ? "Fall Detected"
                             : "Emergency Detected"}
 
@@ -526,6 +564,31 @@ export default function AlertsPage() {
                           </a>
 
                         )}
+
+                      {(alert.latitude === null ||
+                        alert.longitude === null) && (
+                        <div className="mt-4">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleAttachCurrentLocation(alert.id)
+                            }
+                            disabled={locationSaving === alert.id}
+                            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            <MapPin size={18} />
+                            {locationSaving === alert.id
+                              ? "Saving laptop location..."
+                              : "Use This Laptop's Location"}
+                          </button>
+
+                          {locationError && (
+                            <p className="mt-3 text-sm text-red-600">
+                              {locationError}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
                     </div>
 

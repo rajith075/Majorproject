@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -35,9 +35,11 @@ router = APIRouter(
     response_model=VitalLogResponse | None,
 )
 def get_my_latest_vitals(
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    response.headers["Cache-Control"] = "no-store"
 
     if current_user.role != "family":
         raise HTTPException(
@@ -82,9 +84,11 @@ def get_my_latest_vitals(
 )
 def get_caregiver_latest_vitals(
     patient_id: int,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    response.headers["Cache-Control"] = "no-store"
     if current_user.role != "caregiver":
         raise HTTPException(
             status_code=403,
@@ -191,6 +195,7 @@ def get_doctor_vital_history(
 def create_vital_log(
     patient_id: int,
     request: VitalLogCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -210,8 +215,15 @@ def create_vital_log(
             detail="Patient not found.",
         )
 
-    return vital_log_service.create_vital_log(
+    vital, immediate_alerts = vital_log_service.create_vital_log(
         db,
         patient,
         request,
     )
+    background_tasks.add_task(
+        vital_log_service.process_saved_vital,
+        patient.id,
+        vital.id,
+        immediate_alerts,
+    )
+    return vital

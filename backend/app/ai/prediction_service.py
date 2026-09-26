@@ -53,6 +53,62 @@ from app.services.prediction_history_service import (
 
 class PredictionService:
 
+    ROUTINE_CLINICAL_EVENTS = {
+        "",
+        "none",
+        "stable",
+        "normal",
+        "no event",
+    }
+
+    @classmethod
+    def _requires_detailed_gemini_explanation(
+        cls,
+        health_level: str | None,
+        clinical_event: str | None,
+    ) -> bool:
+        """Reserve Gemini/RAG for clinically meaningful changes.
+
+        Local ML predictions and the deterministic summary remain available for
+        every reading. External generation is only needed for High/Critical
+        health risk or a clinical event that is not a stable/normal state.
+        """
+        normalized_health = str(health_level or "").strip().lower()
+        normalized_event = str(clinical_event or "").strip().lower()
+        return (
+            normalized_health in {"high", "critical"}
+            or normalized_event not in cls.ROUTINE_CLINICAL_EVENTS
+        )
+
+    @staticmethod
+    def _routine_monitoring_explanation(
+        health_level: str | None,
+        clinical_event: str | None,
+    ) -> dict:
+        health_label = str(health_level or "Normal").strip() or "Normal"
+        clinical_label = str(clinical_event or "Stable").strip() or "Stable"
+        return {
+            "status": "Routine monitoring",
+            "summary": (
+                "The current automated assessment does not indicate a high "
+                "or critical health risk, and the clinical status is stable. "
+                "Continue routine monitoring and follow the existing care plan."
+            ),
+            "key_factors": [
+                f"Health risk level: {health_label}",
+                f"Clinical status: {clinical_label}",
+            ],
+            "caregiver_guidance": [
+                "Continue regular vital monitoring.",
+                "Use a backend assessment if symptoms change or a reading is concerning.",
+            ],
+            "disclaimer": (
+                "This is an automated health-monitoring summary and does not "
+                "replace professional medical advice."
+            ),
+            "sources": [],
+        }
+
     # ======================================================
     # Initialization
     # ======================================================
@@ -658,21 +714,43 @@ class PredictionService:
         # RAG GENERATION
         # ==================================================
 
-        rag_explanation = (
-            self.rag_generator.generate(
-
-                query=rag_query,
-
-                patient_context=(
-                    patient_context_text
-                ),
-
-                top_k=3,
-
-                category=rag_category,
-
+        if self._requires_detailed_gemini_explanation(
+            health_level=health_level,
+            clinical_event=clinical_event,
+        ):
+            try:
+                rag_explanation = self.rag_generator.generate(
+                    query=rag_query,
+                    patient_context=patient_context_text,
+                    top_k=3,
+                    category=rag_category,
+                )
+            except Exception as error:
+                # A prediction is still useful if optional vector retrieval is
+                # unavailable. Preserve the deterministic AI summary so the
+                # dashboard always has an explanation to display.
+                print(f"[RAG] Explanation unavailable: {error}")
+                rag_explanation = {
+                    "status": "unavailable",
+                    "summary": ai_summary,
+                    "key_factors": [],
+                    "caregiver_guidance": [
+                        "Continue regular monitoring and follow the existing care plan."
+                    ],
+                    "disclaimer": (
+                        "This is an automated health-monitoring summary and does "
+                        "not replace professional medical advice."
+                    ),
+                    "sources": [],
+                }
+        else:
+            print(
+                "[RAG] Gemini explanation skipped for routine stable assessment."
             )
-        )
+            rag_explanation = self._routine_monitoring_explanation(
+                health_level=health_level,
+                clinical_event=clinical_event,
+            )
 
         # ==================================================
         # Alerts

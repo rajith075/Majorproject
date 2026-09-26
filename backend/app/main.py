@@ -47,6 +47,8 @@ from app.models.caregiver_patient import CaregiverPatient
 from app.models.caregiver_invitation import CaregiverInvitation
 from app.models.device_token import DeviceToken
 from app.models.medication_reminder import MedicationReminder
+from app.models.device_connection import DeviceConnection
+from app.routers.device import router as device_router
 
 # ==========================================================
 # FastAPI App
@@ -103,6 +105,7 @@ app.include_router(doctor_router)
 app.include_router(emergency_router)
 app.include_router(twilio_voice_router)
 app.include_router(notification_router)
+app.include_router(device_router)
 # ==========================================================
 # Root Endpoint
 # ==========================================================

@@ -158,7 +158,7 @@ export interface DoctorConsultation {
 
   created_at: string;
   updated_at: string;
-};
+}
 
 // =====================================================
 // GET ALL DOCTOR CONSULTATIONS
@@ -262,17 +262,41 @@ export interface BookConsultationData {
 export const bookConsultation = async (
   data: BookConsultationData
 ): Promise<DoctorConsultation> => {
-  const response = await API.post(
-    "/doctor/consultations/book",
-    data
-  );
+  try {
+    console.log(
+      "📤 BOOK CONSULTATION PAYLOAD:",
+      JSON.stringify(data, null, 2)
+    );
 
-  console.log(
-    "📅 CONSULTATION BOOKED:",
-    JSON.stringify(response.data, null, 2)
-  );
+    const response = await API.post(
+      "/doctor/consultations/book",
+      data
+    );
 
-  return response.data;
+    console.log(
+      "✅ CONSULTATION BOOKED:",
+      JSON.stringify(response.data, null, 2)
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      "❌ BOOK CONSULTATION STATUS:",
+      error?.response?.status
+    );
+
+    console.error(
+      "❌ BOOK CONSULTATION DETAIL:",
+      error?.response?.data
+    );
+
+    console.error(
+      "❌ BOOK CONSULTATION REQUEST:",
+      error?.response?.config?.data
+    );
+
+    throw error;
+  }
 };
 
 // =====================================================
@@ -291,6 +315,7 @@ export const getFamilyConsultations = async (): Promise<
 
   return response.data;
 };
+
 // =====================================================
 // DOCTOR - PATIENT VITAL HISTORY
 // =====================================================
@@ -326,6 +351,7 @@ export const getDoctorVitalHistory = async (
 
   return response.data || [];
 };
+
 // =====================================================
 // DOCTOR - PRESCRIBE MEDICATION
 // =====================================================
@@ -376,6 +402,7 @@ export const prescribeMedication = async (
 
   return response.data;
 };
+
 // =====================================================
 // DOCTOR - GET PATIENT MEDICATIONS
 // =====================================================

@@ -16,7 +16,14 @@ class EmbeddingService:
     def _get_model(self):
         if self.model is None:
             print("Loading RAG Embedding Model...")
-            self.model = SentenceTransformer("all-MiniLM-L6-v2")
+            # The model is part of the local backend setup. Do not contact
+            # Hugging Face on every vital submission: restricted/offline
+            # deployments would otherwise spend minutes retrying before the
+            # AI follow-up can complete.
+            self.model = SentenceTransformer(
+                "all-MiniLM-L6-v2",
+                local_files_only=True,
+            )
             print("[OK] RAG Embedding Model Loaded")
 
         return self.model

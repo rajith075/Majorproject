@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.db.database import SessionLocal
 from app.models.vital_log import VitalLog
 from app.models.patient import Patient
 
@@ -198,18 +199,49 @@ class VitalLogService:
         # 1. CREATE VITAL LOG
         # ==========================================================
 
+        # A device only sends values for sensors it physically has.  Build a
+        # complete current snapshot by retaining the last known value for the
+        # other metrics (for example, blood pressure entered by a doctor).
+        previous_vital = (
+            db.query(VitalLog)
+            .filter(VitalLog.patient_id == patient.id)
+            .order_by(VitalLog.created_at.desc(), VitalLog.id.desc())
+            .first()
+        )
+
+        snapshot_fields = {
+            "heart_rate",
+            "systolic_bp",
+            "diastolic_bp",
+            "spo2",
+            "temperature",
+            "respiratory_rate",
+        }
+
+        def current_value(field):
+            incoming_value = getattr(data, field)
+            if incoming_value is not None:
+                return incoming_value
+
+            if field in snapshot_fields:
+                saved_value = getattr(patient, f"last_{field}", None)
+                if saved_value is not None:
+                    return saved_value
+
+            return getattr(previous_vital, field, None)
+
         vital = VitalLog(
             patient_id=patient.id,
 
-            heart_rate=data.heart_rate,
-            systolic_bp=data.systolic_bp,
-            diastolic_bp=data.diastolic_bp,
-            spo2=data.spo2,
-            temperature=data.temperature,
-            respiratory_rate=data.respiratory_rate,
+            heart_rate=current_value("heart_rate"),
+            systolic_bp=current_value("systolic_bp"),
+            diastolic_bp=current_value("diastolic_bp"),
+            spo2=current_value("spo2"),
+            temperature=current_value("temperature"),
+            respiratory_rate=current_value("respiratory_rate"),
 
-            sleep_hours=data.sleep_hours,
-            activity_steps=data.activity_steps,
+            sleep_hours=current_value("sleep_hours"),
+            activity_steps=current_value("activity_steps"),
         )
 
         db.add(vital)
@@ -218,12 +250,20 @@ class VitalLogService:
         # 2. UPDATE PATIENT SNAPSHOT
         # ==========================================================
 
-        patient.last_heart_rate = data.heart_rate
-        patient.last_systolic_bp = data.systolic_bp
-        patient.last_diastolic_bp = data.diastolic_bp
-        patient.last_spo2 = data.spo2
-        patient.last_temperature = data.temperature
-        patient.last_respiratory_rate = data.respiratory_rate
+        # Keep the last known value when a connected device does not have a
+        # physical sensor for a particular vital. Saving ``None`` here would
+        # erase a valid clinician-entered reading from the patient snapshot.
+        for field in (
+            "heart_rate",
+            "systolic_bp",
+            "diastolic_bp",
+            "spo2",
+            "temperature",
+            "respiratory_rate",
+        ):
+            value = getattr(data, field)
+            if value is not None:
+                setattr(patient, f"last_{field}", value)
 
         # ==========================================================
         # 3. SAVE IMMEDIATELY
@@ -231,6 +271,12 @@ class VitalLogService:
 
         db.commit()
         db.refresh(vital)
+
+        # The reading is now durable and can be displayed immediately. The
+        # optional notification/AI work is intentionally scheduled after the
+        # HTTP response so it cannot block a device submission.
+        immediate_alerts = VitalLogService.get_immediate_emergency_alerts(data)
+        return vital, immediate_alerts
 
         # ==========================================================
         # 4. FAST EMERGENCY CHECK
@@ -478,6 +524,77 @@ class VitalLogService:
         # ==========================================================
 
         return vital
+
+    # ==============================================================
+    # PROCESS A SAVED VITAL IN THE BACKGROUND
+    # ==============================================================
+
+    @staticmethod
+    def process_saved_vital(
+        patient_id: int,
+        vital_id: int,
+        immediate_alerts: list[dict],
+        send_alerts: bool = True,
+    ) -> None:
+        """Generate AI output after saving a vital, optionally escalating alerts."""
+        db = SessionLocal()
+        try:
+            patient = db.get(Patient, patient_id)
+            vital = db.get(VitalLog, vital_id)
+            if not patient or not vital:
+                print(f"[VITAL PROCESSING] Missing patient or vital: {patient_id}/{vital_id}")
+                return
+
+            if send_alerts and immediate_alerts:
+                emergency_notification_service.process_alerts(
+                    db=db,
+                    patient=patient,
+                    vital=vital,
+                    alerts=immediate_alerts,
+                )
+
+            profile = patient_profile_service.get_complete_profile(
+                db=db,
+                patient_id=patient.id,
+            )
+            if profile is None:
+                print(f"[VITAL PROCESSING] Patient profile not found: {patient.id}")
+                return
+
+            prediction_result = prediction_service.predict(
+                db=db,
+                patient_profile=profile,
+            )
+            alerts = prediction_result.get("alerts", [])
+            immediate_is_critical = any(
+                alert.get("severity") == "Critical"
+                for alert in immediate_alerts
+            )
+            ai_requires_escalation = any(
+                alert.get("severity") == "Critical"
+                for alert in alerts
+            )
+
+            if send_alerts and alerts and (
+                not immediate_alerts
+                or (ai_requires_escalation and not immediate_is_critical)
+            ):
+                emergency_notification_service.process_alerts(
+                    db=db,
+                    patient=patient,
+                    vital=vital,
+                    alerts=alerts,
+                )
+
+            print(f"[VITAL PROCESSING] AI prediction completed for vital {vital.id}.")
+        except Exception as error:
+            db.rollback()
+            print(
+                f"[VITAL PROCESSING] AI/notification processing failed for "
+                f"vital {vital_id}: {error}"
+            )
+        finally:
+            db.close()
 
     # ==============================================================
     # GET LATEST VITALS

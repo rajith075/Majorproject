@@ -107,6 +107,22 @@ export const createEmergencyAlert = async (data: {
   return response.data;
 };
 
+// ==========================================================
+// ATTACH LIVE BROWSER LOCATION TO AN ALERT
+// ==========================================================
+
+export const updateEmergencyAlertLocation = async (
+  alertId: number,
+  location: { latitude: number; longitude: number }
+): Promise<EmergencyAlert> => {
+  const response = await API.patch(
+    `/emergency/alerts/${alertId}/location`,
+    location
+  );
+
+  return response.data;
+};
+
 export const registerEmergencyDevice = async (token: string): Promise<void> => {
   await API.post("/notifications/device-token", { token });
 };

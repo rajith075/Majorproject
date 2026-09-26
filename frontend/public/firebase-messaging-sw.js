@@ -34,5 +34,7 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, {
     body,
     data: payload?.data || {},
+    silent: false,
+    requireInteraction: true,
   });
 });

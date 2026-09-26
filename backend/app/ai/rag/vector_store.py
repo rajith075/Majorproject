@@ -119,7 +119,7 @@ class VectorStore:
                 file,
             )
 
-        print("✅ Vector store built")
+        print("[OK] Vector store built")
         print(
             f"Vectors stored: {self.index.ntotal}"
         )
@@ -159,7 +159,7 @@ class VectorStore:
                 file
             )
 
-        print("✅ Vector store loaded")
+        print("[OK] Vector store loaded")
         print(
             f"Vectors available: "
             f"{self.index.ntotal}"

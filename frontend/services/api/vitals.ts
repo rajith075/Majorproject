@@ -15,7 +15,11 @@ export interface VitalLog {
 }
 
 export const getMyLatestVitals = async (): Promise<VitalLog | null> => {
-  const response = await API.get("/vitals/me");
+  const response = await API.get("/vitals/me", {
+    // A dashboard must never reuse a browser/proxy-cached vital response.
+    params: { _: Date.now() },
+    headers: { "Cache-Control": "no-cache" },
+  });
 
   console.log("FAMILY LATEST VITALS:", response.data);
 
@@ -26,7 +30,11 @@ export const getCaregiverLatestVitals = async (
   patientId: number
 ): Promise<VitalLog | null> => {
   const response = await API.get(
-    `/vitals/caregiver/patient/${patientId}/latest`
+    `/vitals/caregiver/patient/${patientId}/latest`,
+    {
+      params: { _: Date.now() },
+      headers: { "Cache-Control": "no-cache" },
+    }
   );
 
   return response.data;

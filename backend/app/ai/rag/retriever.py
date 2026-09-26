@@ -383,7 +383,7 @@ class Retriever:
         if not relevant_results:
 
             print(
-                "[RAG DEBUG] ❌ NO MEDICAL KNOWLEDGE "
+                "[RAG DEBUG] NO MEDICAL KNOWLEDGE "
                 "SURVIVED RETRIEVAL FILTERS."
             )
 

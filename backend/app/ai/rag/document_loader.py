@@ -97,7 +97,7 @@ class DocumentLoader:
             except Exception as e:
 
                 print(
-                    f"⚠️ Failed to load "
+                    f"[RAG] Failed to load "
                     f"{file_path}: {e}"
                 )
 

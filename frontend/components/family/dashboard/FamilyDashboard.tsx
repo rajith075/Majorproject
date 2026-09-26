@@ -16,10 +16,8 @@ import {
   getPatientEmergencyAlerts,
   EmergencyAlert,
 } from "@/services/api/emergency";
-import {
-  announceEmergencyAlert,
-  EMERGENCY_ALERT_EVENT,
-} from "@/lib/emergency-alert";
+import { EMERGENCY_ALERT_EVENT } from "@/lib/emergency-alert";
+import { attachCurrentLocationToEmergency } from "@/lib/emergency-location";
 
 interface Medication {
   id: number;
@@ -50,8 +48,29 @@ export default function FamilyDashboard() {
     []
   );
   const [emergencyLoading, setEmergencyLoading] = useState(true);
+  const [locationSavingAlertId, setLocationSavingAlertId] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   const latestEmergencyAlertId = useRef<number | null>(null);
+
+  const saveLaptopLocation = async (alertId: number) => {
+    if (!patient?.id) return;
+
+    try {
+      setLocationSavingAlertId(alertId);
+      setLocationError(null);
+      await attachCurrentLocationToEmergency(alertId);
+      const alerts = await getPatientEmergencyAlerts(patient.id);
+      setEmergencyAlerts(alerts || []);
+    } catch (error) {
+      console.error("[LOCATION] Unable to save laptop location:", error);
+      setLocationError(
+        "Location could not be saved. Allow browser location and try again."
+      );
+    } finally {
+      setLocationSavingAlertId(null);
+    }
+  };
 
   // ==========================================================
   // LOAD MEDICATIONS
@@ -81,7 +100,7 @@ export default function FamilyDashboard() {
   // ==========================================================
 
   useEffect(() => {
-    const loadEmergencyAlerts = async (playFallbackSound = false) => {
+    const loadEmergencyAlerts = async () => {
       if (!patient?.id) {
         setEmergencyLoading(false);
         return;
@@ -104,9 +123,6 @@ export default function FamilyDashboard() {
           } else if (newestAlert.id !== latestEmergencyAlertId.current) {
             // 🔊 NEW EMERGENCY ALERT DETECTED
             latestEmergencyAlertId.current = newestAlert.id;
-            if (playFallbackSound) {
-              announceEmergencyAlert({ id: newestAlert.id });
-            }
           }
         }
 
@@ -125,16 +141,10 @@ export default function FamilyDashboard() {
 
     loadEmergencyAlerts();
 
-    const refreshAfterPush = () => loadEmergencyAlerts(false);
+    const refreshAfterPush = () => void loadEmergencyAlerts();
     window.addEventListener(EMERGENCY_ALERT_EVENT, refreshAfterPush);
 
-    // Fallback for browsers without FCM or a disconnected service worker.
-    const interval = setInterval(() => {
-      loadEmergencyAlerts(true);
-    }, 1000);
-
     return () => {
-      clearInterval(interval);
       window.removeEventListener(EMERGENCY_ALERT_EVENT, refreshAfterPush);
     };
   }, [patient?.id]);
@@ -424,6 +434,37 @@ export default function FamilyDashboard() {
                                   alert.detected_at
                                 ).toLocaleString()}
                               </p>
+
+                              {alert.latitude !== null &&
+                              alert.longitude !== null ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-4 inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
+                                >
+                                  View Location
+                                </a>
+                              ) : (
+                                <div className="mt-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => saveLaptopLocation(alert.id)}
+                                    disabled={locationSavingAlertId === alert.id}
+                                    className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {locationSavingAlertId === alert.id
+                                      ? "Saving location..."
+                                      : "Use This Laptop's Location"}
+                                  </button>
+
+                                  {locationError && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                      {locationError}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
 

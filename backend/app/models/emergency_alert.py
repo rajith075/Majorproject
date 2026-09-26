@@ -2,6 +2,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -42,10 +43,12 @@ class EmergencyAlert(Base):
     )
 
     latitude = Column(
+        Float,
         nullable=True,
     )
 
     longitude = Column(
+        Float,
         nullable=True,
     )
 
